@@ -23,6 +23,17 @@ namespace findjobnuAPI
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            // Add CORS policy to allow any origin
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader();
+                });
+            });
+
             var app = builder.Build();
 
             app.UseForwardedHeaders(new ForwardedHeadersOptions
@@ -30,10 +41,12 @@ namespace findjobnuAPI
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
             });
 
-            
+            // Enable CORS before other middleware
+            app.UseCors("AllowAll");
+
             app.UseSwagger();
             app.UseSwaggerUI();
-            
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseHttpsRedirection();
@@ -41,10 +54,8 @@ namespace findjobnuAPI
             }
             else
             {
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
-            
 
             app.UseAuthorization();
 
