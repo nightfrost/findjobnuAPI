@@ -67,13 +67,13 @@ public static class JobIndexPostsEndpoints
         .WithName("GetJobPostsBySearch")
         .WithOpenApi();
 
-        group.MapGet("/{id}", async Task<Results<Ok<JobIndexPosts>, NotFound>> (int jobid, FindjobnuContext db) =>
+        group.MapGet("/{id}", async Task<Results<Ok<JobIndexPosts>, NoContent>> (int id, FindjobnuContext db) =>
         {
             return await db.JobIndexPosts.AsNoTracking()
-                .FirstOrDefaultAsync(model => model.JobID == jobid)
+                .FirstOrDefaultAsync(model => model.JobID == id)
                 is JobIndexPosts model
                     ? TypedResults.Ok(model)
-                    : TypedResults.NotFound();
+                    : TypedResults.NoContent();
         })
         .WithName("GetJobPostsById")
         .WithOpenApi();
