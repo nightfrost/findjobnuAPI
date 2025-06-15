@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36109.1 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "findjobnuAPI", "findjobnuAPI\findjobnuAPI.csproj", "{2B5E5009-F4D5-4C6C-B542-5960D43D91C9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2B5E5009-F4D5-4C6C-B542-5960D43D91C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B5E5009-F4D5-4C6C-B542-5960D43D91C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B5E5009-F4D5-4C6C-B542-5960D43D91C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B5E5009-F4D5-4C6C-B542-5960D43D91C9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {78365F1A-83AC-473B-B4DC-DD802312E8C9}
+	EndGlobalSection
+EndGlobal
