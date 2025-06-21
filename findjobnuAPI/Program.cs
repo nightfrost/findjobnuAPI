@@ -49,13 +49,9 @@ namespace findjobnuAPI
 
             if (app.Environment.IsDevelopment())
             {
-                app.UseHttpsRedirection();
                 app.UseDeveloperExceptionPage();
             }
-            else
-            {
-                app.UseHsts();
-            }
+            app.UseHttpsRedirection();
 
             app.UseAuthorization();
 
