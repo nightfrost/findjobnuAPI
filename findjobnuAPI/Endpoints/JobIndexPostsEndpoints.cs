@@ -77,5 +77,19 @@ public static class JobIndexPostsEndpoints
         })
         .WithName("GetJobPostsById")
         .WithOpenApi();
+
+        group.MapGet("/categories", async (FindjobnuContext db) =>
+        {
+            var categories = await db.JobIndexPosts
+                .Where(j => !string.IsNullOrEmpty(j.Category))
+                .Select(j => j.Category!)
+                .Distinct()
+                .OrderBy(c => c)
+                .ToListAsync();
+
+            return TypedResults.Ok(categories);
+        })
+        .WithName("GetJobCategories")
+        .WithOpenApi();
     }
 }
