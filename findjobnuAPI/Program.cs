@@ -51,11 +51,19 @@ namespace findjobnuAPI
             {
                 app.UseDeveloperExceptionPage();
             }
+
+                        if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+};
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
 
             app.MapJobIndexPostsEndpoints();
+
+                        app.MapCitiesEndpoints();
 
             app.Run();
         }
