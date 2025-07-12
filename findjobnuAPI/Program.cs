@@ -2,6 +2,10 @@
 using findjobnuAPI.Repositories.Context;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using findjobnuAPI.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace findjobnuAPI
 {
@@ -18,12 +22,40 @@ namespace findjobnuAPI
             builder.Services.AddDbContext<FindjobnuContext>(options =>
                 options.UseSqlServer(connectionString));
 
+            var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+            var secretKey = jwtSettings["SecretKey"];
+            var issuer = jwtSettings["Issuer"];
+            var audience = jwtSettings["Audience"];
+
+            if (string.IsNullOrEmpty(secretKey) || 
+                string.IsNullOrEmpty(issuer) || 
+                string.IsNullOrEmpty(audience))
+            {
+                throw new InvalidOperationException("JWT settings are not properly configured in appsettings.json.");
+            }
+
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ValidIssuer = issuer, 
+                        ValidAudience = audience, 
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+                    };
+                });
+
             builder.Services.AddAuthorization();
+            builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+            builder.Services.AddScoped<IJobIndexPostsService, JobIndexPostsService>();
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            // Add CORS policy to allow any origin
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAll", policy =>
@@ -41,7 +73,6 @@ namespace findjobnuAPI
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost
             });
 
-            // Enable CORS before other middleware
             app.UseCors("AllowAll");
 
             app.UseSwagger();
@@ -51,19 +82,14 @@ namespace findjobnuAPI
             {
                 app.UseDeveloperExceptionPage();
             }
-
-                        if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-};
+            
             app.UseHttpsRedirection();
-
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapJobIndexPostsEndpoints();
-
-                        app.MapCitiesEndpoints();
+            app.MapCitiesEndpoints();
+            app.MapUserProfileEndpoints();
 
             app.Run();
         }

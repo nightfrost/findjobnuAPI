@@ -1,0 +1,13 @@
+﻿using findjobnuAPI.Models;
+using findjobnuAPI.Repositories.Context;
+
+namespace findjobnuAPI.Services
+{
+    public interface IJobIndexPostsService
+    {
+        Task<PagedList<JobIndexPosts>> GetAllAsync(int page, int pageSize);
+        Task<PagedList<JobIndexPosts>?> SearchAsync(string? searchTerm, string? location, string? category, DateTime? postedAfter, DateTime? postedBefore, int page);
+        Task<JobIndexPosts?> GetByIdAsync(int id);
+        Task<List<string>> GetCategoriesAsync();
+    }
+}
