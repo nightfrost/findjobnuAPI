@@ -43,7 +43,7 @@ public static class UserProfileEndpoints
         .WithName("CreateUserProfile")
         .WithOpenApi();
 
-        group.MapGet("/{userId}/savedjobs", async Task<Results<Ok<List<string>>, NotFound>> (int userId, UserProfileService service) =>
+        group.MapGet("/{userId}/savedjobs", async Task<Results<Ok<List<string>>, NotFound>> (int userId, IUserProfileService service) =>
         {
             var savedJobs = await service.GetSavedJobsByUserIdAsync(userId);
             return savedJobs != null ? TypedResults.Ok(savedJobs) : TypedResults.NotFound();
@@ -51,7 +51,7 @@ public static class UserProfileEndpoints
         .WithName("GetSavedJob")
         .WithOpenApi();
 
-        group.MapPost("/{userId}/savedjobs/{jobId}", async Task<Results<Ok, NotFound>> (int userId, string jobId, UserProfileService service) =>
+        group.MapPost("/{userId}/savedjobs/{jobId}", async Task<Results<Ok, NotFound>> (int userId, string jobId, IUserProfileService service) =>
         {
             var success = await service.SaveJobAsync(userId, jobId);
             return success ? TypedResults.Ok() : TypedResults.NotFound();
