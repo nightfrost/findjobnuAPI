@@ -5,7 +5,7 @@
         public int TotalCount { get; set; }
         public int PageSize { get; set; }
         public int CurrentPage { get; set; }
-        public IEnumerable<T> Items { get; set; } = Enumerable.Empty<T>();
+        public IEnumerable<T> Items { get; set; } = [];
         public PagedList(int totalCount, int pageSize, int currentPage, IEnumerable<T> items)
         {
             TotalCount = totalCount;

@@ -13,7 +13,7 @@ namespace findjobnuAPI.Services
             _db = db;
         }
 
-        public async Task<UserProfile?> GetByIdAsync(string id)
+        public async Task<UserProfile?> GetByIdAsync(int id)
         {
             return await _db.UserProfile.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
         }
@@ -25,12 +25,11 @@ namespace findjobnuAPI.Services
             return userProfile;
         }
 
-        public async Task<bool> UpdateAsync(string id, UserProfile userProfile, string authenticatedUserId)
+        public async Task<bool> UpdateAsync(int id, UserProfile userProfile, string authenticatedUserId)
         {
             var affected = await _db.UserProfile
                 .Where(model => model.Id == id && model.UserId == authenticatedUserId)
                 .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(m => m.Id, userProfile.Id)
                     .SetProperty(m => m.UserId, userProfile.UserId)
                     .SetProperty(m => m.FirstName, userProfile.FirstName)
                     .SetProperty(m => m.LastName, userProfile.LastName)

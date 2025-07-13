@@ -4,8 +4,8 @@ namespace findjobnuAPI.Services
 {
     public interface IUserProfileService
     {
-        Task<UserProfile?> GetByIdAsync(string id);
+        Task<UserProfile?> GetByIdAsync(int id);
         Task<UserProfile?> CreateAsync(UserProfile userProfile);
-        Task<bool> UpdateAsync(string id, UserProfile userProfile, string authenticatedUserId);
+        Task<bool> UpdateAsync(int id, UserProfile userProfile, string authenticatedUserId);
     }
 }

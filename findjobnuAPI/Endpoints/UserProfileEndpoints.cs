@@ -14,7 +14,7 @@ public static class UserProfileEndpoints
                           .WithTags(nameof(UserProfile))
                           .RequireAuthorization();
 
-        group.MapGet("/{id}", async Task<Results<Ok<UserProfile>, NotFound>> (string id, IUserProfileService service) =>
+        group.MapGet("/{id}", async Task<Results<Ok<UserProfile>, NotFound>> (int id, IUserProfileService service) =>
         {
             var model = await service.GetByIdAsync(id);
             return model is not null ? TypedResults.Ok(model) : TypedResults.NotFound();
@@ -22,7 +22,7 @@ public static class UserProfileEndpoints
         .WithName("GetUserProfileById")
         .WithOpenApi();
 
-        group.MapPut("/{id}", async Task<Results<Ok, NotFound, ForbidHttpResult>> (string id, UserProfile userProfile, IUserProfileService service, HttpContext context) =>
+        group.MapPut("/{id}", async Task<Results<Ok, NotFound, ForbidHttpResult>> (int id, UserProfile userProfile, IUserProfileService service, HttpContext context) =>
         {
             var authenticatedUserId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (authenticatedUserId == null || authenticatedUserId != userProfile.UserId)

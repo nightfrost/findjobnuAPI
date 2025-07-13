@@ -5,7 +5,7 @@ namespace findjobnuAPI.Models
     public class UserProfile
     {
         [Key]
-        public string Id { get; set; } = string.Empty;
+        public int Id { get; set; }
         [Required]
         public string UserId { get; set; } = string.Empty; //Foreign key to the user in the authentication service
         [Required, StringLength(50)]
@@ -17,6 +17,6 @@ namespace findjobnuAPI.Models
         public string? PhoneNumber { get; set; } = string.Empty;
         public string? Address { get; set; } = string.Empty;
         public DateTime? LastUpdatedAt { get; set; }
-        public List<string>? SavedJobPosts { get; set; } = new List<string>();
+        public List<string>? SavedJobPosts { get; set; } = [];
     }
 }

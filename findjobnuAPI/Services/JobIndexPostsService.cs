@@ -67,6 +67,7 @@ namespace findjobnuAPI.Services
         {
             return await _db.JobIndexPosts
                 .Where(j => !string.IsNullOrEmpty(j.Category))
+                .AsNoTracking()
                 .Select(j => j.Category!)
                 .Distinct()
                 .OrderBy(c => c)
