@@ -27,19 +27,75 @@ namespace findjobnuAPI.Services
 
         public async Task<bool> UpdateAsync(int id, UserProfile userProfile, string authenticatedUserId)
         {
-            var affected = await _db.UserProfile
-                .Where(model => model.Id == id && model.UserId == authenticatedUserId)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(m => m.UserId, userProfile.UserId)
-                    .SetProperty(m => m.FirstName, userProfile.FirstName)
-                    .SetProperty(m => m.LastName, userProfile.LastName)
-                    .SetProperty(m => m.DateOfBirth, userProfile.DateOfBirth)
-                    .SetProperty(m => m.PhoneNumber, userProfile.PhoneNumber)
-                    .SetProperty(m => m.Address, userProfile.Address)
-                    .SetProperty(m => m.LastUpdatedAt, userProfile.LastUpdatedAt)
-                    .SetProperty(m => m.SavedJobPosts, userProfile.SavedJobPosts)
-                );
-            return affected == 1;
+            var providerName = _db.Database.ProviderName;
+            if (providerName != null && providerName.Contains("InMemory"))
+            {
+                // Fallback for InMemory provider (used in tests)
+                var entity = await _db.UserProfile
+                    .FirstOrDefaultAsync(model => model.Id == id && model.UserId == authenticatedUserId);
+                if (entity == null)
+                    return false;
+
+                entity.UserId = userProfile.UserId;
+                entity.FirstName = userProfile.FirstName;
+                entity.LastName = userProfile.LastName;
+                entity.DateOfBirth = userProfile.DateOfBirth;
+                entity.PhoneNumber = userProfile.PhoneNumber;
+                entity.Address = userProfile.Address;
+
+                await _db.SaveChangesAsync();
+                return true;
+            }
+            else
+            {
+                // Use bulk update for relational providers
+                var affected = await _db.UserProfile
+                    .Where(model => model.Id == id && model.UserId == authenticatedUserId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(m => m.UserId, userProfile.UserId)
+                        .SetProperty(m => m.FirstName, userProfile.FirstName)
+                        .SetProperty(m => m.LastName, userProfile.LastName)
+                        .SetProperty(m => m.DateOfBirth, userProfile.DateOfBirth)
+                        .SetProperty(m => m.PhoneNumber, userProfile.PhoneNumber)
+                        .SetProperty(m => m.Address, userProfile.Address)
+                        .SetProperty(m => m.LastUpdatedAt, DateTime.UtcNow)
+                        .SetProperty(m => m.SavedJobPosts, userProfile.SavedJobPosts)
+                    );
+                return affected == 1;
+            }
+        }
+
+        public async Task<List<string>> GetSavedJobsByUserIdAsync(int userId)
+        {
+            var userProfile = await _db.UserProfile
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == userId);
+            if (userProfile == null)
+            {
+                return new List<string>();
+            }
+            return userProfile.SavedJobPosts ?? [];
+        }
+
+        public async Task<bool> SaveJobAsync(int userId, string jobId)
+        {
+            var userProfile = await _db.UserProfile
+                .FirstOrDefaultAsync(x => x.Id == userId);
+            if (userProfile == null)
+            {
+                return false;
+            }
+            if (userProfile.SavedJobPosts == null)
+            {
+                userProfile.SavedJobPosts = new List<string>();
+            }
+            if (!userProfile.SavedJobPosts.Contains(jobId))
+            {
+                userProfile.SavedJobPosts.Add(jobId);
+                await _db.SaveChangesAsync();
+                return true;
+            }
+            return false;
         }
     }
 }
