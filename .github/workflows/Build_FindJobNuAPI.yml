@@ -1,28 +1,80 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+# This workflow will build a .NET project and deploy it to a stand-alone Ubuntu server.
+# For more information on .NET builds, see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
 
-name: .NET
+name: .FindJob.nu CI/CD Pipeline
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master" ] # Using 'master' as per your provided workflow
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master" ] # Using 'master' as per your provided workflow
+
+# Define your variables (SERVER_NAME, SERVER_USER) and secrets (SERVER_ROOT_CERTIFICATE)
+# in your GitHub repository settings under 'Settings' -> 'Variables' and 'Secrets'.
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x # Using 8.0.x as per your request
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore
+
+      - name: Test
+        run: dotnet test --no-build --verbosity normal
+
+      - name: Publish application for deployment
+        run: dotnet publish -c Release -o publish # Publishes the application to a 'publish' directory
+                                                  # '-c Release' ensures a release build
+                                                  # '-o publish' sets the output directory
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact # Name of the artifact to be downloaded later
+          path: publish # The path to your application's published files
+
+  deploy:
+    needs: build # This job will only run after the 'build' job completes successfully
+    runs-on: ubuntu-latest
+    environment: Development # Good practice to define an environment for deployments
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.0.x
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifact # Must match the name used in the 'upload-artifact' step
+          path: ./downloaded-artifact # Downloads the artifact contents into this directory
+
+      - name: Deploy application files via SCP
+        uses: appleboy/scp-action@v0.1.7 # Action to copy files over SSH
+        with:
+          host: ${{ vars.SERVER_NAME }} # Your server's DNS address/IP from GitHub variable
+          username: ${{ vars.SERVER_USER }} # Your server username from GitHub variable
+          key: ${{ secrets.SERVER_ROOT_CERTIFICATE }} # Your SSH private key from GitHub secret
+          source: "./downloaded-artifact/*" # Source path: all contents of the downloaded artifact directory
+          target: "/var/www/findjobnu/publish" # Destination path on your Ubuntu server
+          strip_components: 1 # Important: This removes the 'downloaded-artifact' directory from the target path,
+                              # copying only its *contents* directly into '/var/www/findjobnu/publish'.
+
+      - name: Execute post-deployment commands via SSH
+        uses: appleboy/ssh-action@v1.0.3 # Action to execute commands over SSH
+        with:
+          host: ${{ vars.SERVER_NAME }}
+          username: ${{ vars.SERVER_USER }}
+          key: ${{ secrets.SERVER_ROOT_CERTIFICATE }}
+          script: |
+            echo "Deployment completed on $(date)"
+            echo "Listing contents of the publish directory:"
+            ls -la /var/www/findjobnu/publish
+            sudo systemctl restart findjobnuapi.service
