@@ -14,7 +14,7 @@ public static class UserProfileEndpoints
                           .WithTags(nameof(UserProfile))
                           .RequireAuthorization();
 
-        group.MapGet("/{id}", async Task<Results<Ok<UserProfile>, NotFound>> (string userid, IUserProfileService service) =>
+        group.MapGet("/{userid}", async Task<Results<Ok<UserProfile>, NotFound>> (string userid, IUserProfileService service) =>
         {
             var model = await service.GetByUserIdAsync(userid);
             return model is not null ? TypedResults.Ok(model) : TypedResults.NotFound();
