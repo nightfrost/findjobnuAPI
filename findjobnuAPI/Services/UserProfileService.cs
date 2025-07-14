@@ -13,9 +13,9 @@ namespace findjobnuAPI.Services
             _db = db;
         }
 
-        public async Task<UserProfile?> GetByIdAsync(int id)
+        public async Task<UserProfile?> GetByUserIdAsync(string id)
         {
-            return await _db.UserProfile.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+            return await _db.UserProfile.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == id);
         }
 
         public async Task<UserProfile?> CreateAsync(UserProfile userProfile)

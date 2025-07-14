@@ -14,12 +14,12 @@ public static class UserProfileEndpoints
                           .WithTags(nameof(UserProfile))
                           .RequireAuthorization();
 
-        group.MapGet("/{id}", async Task<Results<Ok<UserProfile>, NotFound>> (int id, IUserProfileService service) =>
+        group.MapGet("/{id}", async Task<Results<Ok<UserProfile>, NotFound>> (string userid, IUserProfileService service) =>
         {
-            var model = await service.GetByIdAsync(id);
+            var model = await service.GetByUserIdAsync(userid);
             return model is not null ? TypedResults.Ok(model) : TypedResults.NotFound();
         })
-        .WithName("GetUserProfileById")
+        .WithName("GetUserProfileByUserId")
         .WithOpenApi();
 
         group.MapPut("/{id}", async Task<Results<Ok, NotFound, ForbidHttpResult>> (int id, UserProfile userProfile, IUserProfileService service, HttpContext context) =>
