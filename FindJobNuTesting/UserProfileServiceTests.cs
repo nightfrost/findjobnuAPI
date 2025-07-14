@@ -28,7 +28,7 @@ namespace findjobnuAPI.Tests.Services
             context.UserProfile.Add(user);
             await context.SaveChangesAsync();
 
-            var result = await service.GetByIdAsync(1);
+            var result = await service.GetByUserIdAsync("user1");
 
             Assert.NotNull(result);
             Assert.Equal("John", result!.FirstName);
