@@ -65,11 +65,11 @@ namespace findjobnuAPI.Services
             }
         }
 
-        public async Task<List<string>> GetSavedJobsByUserIdAsync(int userId)
+        public async Task<List<string>> GetSavedJobsByUserIdAsync(string userId)
         {
             var userProfile = await _db.UserProfile
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == userId);
+                .FirstOrDefaultAsync(x => x.UserId == userId);
             if (userProfile == null)
             {
                 return new List<string>();
@@ -77,10 +77,10 @@ namespace findjobnuAPI.Services
             return userProfile.SavedJobPosts ?? [];
         }
 
-        public async Task<bool> SaveJobAsync(int userId, string jobId)
+        public async Task<bool> SaveJobAsync(string userId, string jobId)
         {
             var userProfile = await _db.UserProfile
-                .FirstOrDefaultAsync(x => x.Id == userId);
+                .FirstOrDefaultAsync(x => x.UserId == userId);
             if (userProfile == null)
             {
                 return false;

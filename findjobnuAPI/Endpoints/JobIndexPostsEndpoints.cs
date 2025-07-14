@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.OpenApi;
-using findjobnuAPI.Models;
+﻿using findjobnuAPI.Models;
 using findjobnuAPI.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.OpenApi;
+using System.Security.Claims;
 
 namespace findjobnuAPI.Endpoints;
 
@@ -50,6 +52,19 @@ public static class JobIndexPostsEndpoints
             return TypedResults.Ok(categories);
         })
         .WithName("GetJobCategories")
+        .WithOpenApi();
+
+        group.MapGet("/saved", async Task<Results<Ok<List<JobIndexPosts>>, UnauthorizedHttpResult>> (HttpContext httpContext, IJobIndexPostsService service) =>
+        {
+            var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return TypedResults.Unauthorized();
+
+            var pagedList = await service.GetSavedJobsByUserId(userId);
+            return TypedResults.Ok(pagedList);
+        })
+        .RequireAuthorization()
+        .WithName("GetSavedJobPostsByUser")
         .WithOpenApi();
     }
 }

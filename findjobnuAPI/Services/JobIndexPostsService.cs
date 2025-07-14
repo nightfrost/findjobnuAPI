@@ -73,5 +73,33 @@ namespace findjobnuAPI.Services
                 .OrderBy(c => c)
                 .ToListAsync();
         }
+
+        public async Task<List<JobIndexPosts>> GetSavedJobsByUserId(string userid)
+        {
+            var userSavedJobIds = await _db.UserProfile
+                .Where(up => up.UserId == userid)
+                .SelectMany(up => up.SavedJobPosts ?? new List<string>())
+                .ToListAsync();
+
+            if (userSavedJobIds == null || userSavedJobIds.Count == 0)
+                return new List<JobIndexPosts>();
+
+            var jobIds = userSavedJobIds
+                .Select(id => int.TryParse(id, out var intId) ? (int?)intId : null)
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToList();
+
+            var query = _db.JobIndexPosts
+                .Where(j => jobIds.Contains(j.JobID))
+                .AsNoTracking();
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .OrderBy(j => j.JobID)
+                .ToListAsync();
+
+            return [.. items];
+        }
     }
 }

@@ -9,5 +9,6 @@ namespace findjobnuAPI.Services
         Task<PagedList<JobIndexPosts>?> SearchAsync(string? searchTerm, string? location, string? category, DateTime? postedAfter, DateTime? postedBefore, int page);
         Task<JobIndexPosts?> GetByIdAsync(int id);
         Task<List<string>> GetCategoriesAsync();
+        Task<List<JobIndexPosts>> GetSavedJobsByUserId(string userid);
     }
 }
