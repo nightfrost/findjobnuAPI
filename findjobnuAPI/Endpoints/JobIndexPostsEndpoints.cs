@@ -54,14 +54,15 @@ public static class JobIndexPostsEndpoints
         .WithName("GetJobCategories")
         .WithOpenApi();
 
-        group.MapGet("/saved", async Task<Results<Ok<List<JobIndexPosts>>, UnauthorizedHttpResult>> (int page, HttpContext httpContext, IJobIndexPostsService service) =>
+        group.MapGet("/saved", async Task<Results<Ok<PagedList<JobIndexPosts>>, UnauthorizedHttpResult, NoContent>> (int page, HttpContext httpContext, IJobIndexPostsService service) =>
         {
             var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return TypedResults.Unauthorized();
 
             var pagedList = await service.GetSavedJobsByUserId(userId, page);
-            return TypedResults.Ok(pagedList);
+            return pagedList?.Items.Count() >= 0 ? TypedResults.Ok(pagedList) :
+                TypedResults.NoContent();
         })
         .RequireAuthorization()
         .WithName("GetSavedJobPostsByUser")

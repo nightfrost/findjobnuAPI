@@ -75,7 +75,7 @@ namespace findjobnuAPI.Services
                 .ToListAsync();
         }
 
-        public async Task<List<JobIndexPosts>> GetSavedJobsByUserId(string userid, int page)
+        public async Task<PagedList<JobIndexPosts>> GetSavedJobsByUserId(string userid, int page)
         {
             int pagesize = 20;
 
@@ -85,7 +85,7 @@ namespace findjobnuAPI.Services
                 .FirstOrDefaultAsync();
 
             if (userSavedJobIds == null || userSavedJobIds.Count == 0)
-                return new List<JobIndexPosts>();
+                return new PagedList<JobIndexPosts>(0, pagesize, page, []);
 
             var jobIds = userSavedJobIds
                 .Select(id => int.TryParse(id, out var intId) ? (int?)intId : null)
@@ -104,7 +104,7 @@ namespace findjobnuAPI.Services
                 .OrderBy(j => j.JobID)
                 .ToListAsync();
 
-            return [.. items];
+            return new PagedList<JobIndexPosts>(totalCount, pagesize, page, items);
         }
     }
 }
