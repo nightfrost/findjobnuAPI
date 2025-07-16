@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using findjobnuAPI.Models;
 using findjobnuAPI.Repositories.Context;
+using Humanizer.Localisation.DateToOrdinalWords;
 
 namespace findjobnuAPI.Services
 {
@@ -74,12 +75,14 @@ namespace findjobnuAPI.Services
                 .ToListAsync();
         }
 
-        public async Task<List<JobIndexPosts>> GetSavedJobsByUserId(string userid)
+        public async Task<List<JobIndexPosts>> GetSavedJobsByUserId(string userid, int page)
         {
+            int pagesize = 20;
+
             var userSavedJobIds = await _db.UserProfile
                 .Where(up => up.UserId == userid)
-                .SelectMany(up => up.SavedJobPosts ?? new List<string>())
-                .ToListAsync();
+                .Select(up => up.SavedJobPosts)
+                .FirstOrDefaultAsync();
 
             if (userSavedJobIds == null || userSavedJobIds.Count == 0)
                 return new List<JobIndexPosts>();
@@ -92,6 +95,8 @@ namespace findjobnuAPI.Services
 
             var query = _db.JobIndexPosts
                 .Where(j => jobIds.Contains(j.JobID))
+                .Skip((page - 1) * pagesize)
+                .Take(pagesize)
                 .AsNoTracking();
 
             var totalCount = await query.CountAsync();
