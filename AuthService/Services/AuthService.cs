@@ -29,11 +29,32 @@ namespace AuthService.Services
 
         public async Task<AuthResponse?> RegisterAsync(RegisterRequest request)
         {
-            var user = new ApplicationUser { UserName = request.Email, Email = request.Email };
+            var user = new ApplicationUser
+            {
+                UserName = request.Email,
+                Email = request.Email,
+                PhoneNumber = request.Phone
+            };
             var result = await _userManager.CreateAsync(user, request.Password);
 
             if (result.Succeeded)
             {
+                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                var domain = _configuration["Domain"] ?? "";
+
+                var confirmationLink = $"https://auth.findjob.nu/api/auth/confirm-email?userId={Uri.EscapeDataString(user.Id)}&token={Uri.EscapeDataString(token)}";
+
+                Console.WriteLine("Attempting to send confirmation email...");
+                try
+                {
+                    await SendEmailAsync(user.Email, "Confirm your email", $"Please confirm your account by clicking this link: <a href=\"{confirmationLink}\">Confirm Email</a>");
+                    Console.WriteLine("Email sent successfully.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Email sending failed: {ex}");
+                }
+
                 return await GenerateAuthResponseAsync(user);
             }
 
@@ -113,6 +134,16 @@ namespace AuthService.Services
             _dbContext.RefreshTokens.Update(storedRefreshToken);
             await _dbContext.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<bool> ConfirmEmailAsync(string userId, string token)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return false;
+
+            var result = await _userManager.ConfirmEmailAsync(user, token);
+            return result.Succeeded;
         }
 
 
@@ -245,6 +276,30 @@ namespace AuthService.Services
                 _dbContext.RefreshTokens.Update(token);
             }
             await _dbContext.SaveChangesAsync();
+        }
+
+        private async Task SendEmailAsync(string toEmail, string subject, string htmlMessage)
+        {
+            var smtpSection = _configuration.GetSection("Smtp");
+            var host = smtpSection["Host"];
+            var port = int.Parse(smtpSection["Port"] ?? "25");
+            var username = smtpSection["Username"];
+            var password = smtpSection["Password"];
+            var from = smtpSection["From"];
+
+            using var client = new System.Net.Mail.SmtpClient(host, port)
+            {
+                Credentials = new System.Net.NetworkCredential(username, password),
+                EnableSsl = true,
+                Timeout = 10000
+            };
+
+            var mailMessage = new System.Net.Mail.MailMessage(from, toEmail, subject, htmlMessage)
+            {
+                IsBodyHtml = true
+            };
+
+            await client.SendMailAsync(mailMessage);
         }
     }
 }

@@ -9,9 +9,8 @@ namespace AuthService.Endpoints
         public static void MapAuthEndpoints(this WebApplication app)
         {
             var authGroup = app.MapGroup("/api/auth")
-                               .WithTags("Authentication"); // Group endpoints in Swagger UI
+                               .WithTags("Authentication"); 
 
-            // Register Endpoint
             authGroup.MapPost("/register", async (RegisterRequest request, IAuthService authService) =>
             {
                 var authResponse = await authService.RegisterAsync(request);
@@ -26,9 +25,8 @@ namespace AuthService.Endpoints
             .Produces(StatusCodes.Status400BadRequest)
             .WithName("Register")
             .WithSummary("Registers a new user.")
-            .WithDescription("Registers a new user with the provided email and password.");
+            .WithDescription("Registers a new user with the provided email, password, and optional phone number.");
 
-            // Login Endpoint
             authGroup.MapPost("/login", async (LoginRequest request, IAuthService authService) =>
             {
                 var authResponse = await authService.LoginAsync(request);
@@ -101,6 +99,22 @@ namespace AuthService.Endpoints
             .WithName("GetProtectedData")
             .WithSummary("Retrieves protected data.")
             .WithDescription("An example endpoint that requires authentication to access.");
+
+            authGroup.MapGet("/confirm-email", async ([FromQuery] string userId, [FromQuery] string token, IAuthService authService) =>
+            {
+                var success = await authService.ConfirmEmailAsync(userId, token);
+                if (success)
+                {
+                    return Results.Redirect("https://findjob.nu");
+                }
+                return Results.BadRequest(new { message = "Email confirmation failed. Invalid token or user." });
+            })
+            .WithOpenApi()
+            .Produces(StatusCodes.Status302Found)
+            .Produces(StatusCodes.Status400BadRequest)
+            .WithName("ConfirmEmail")
+            .WithSummary("Confirms a user's email address.")
+            .WithDescription("Confirms the user's email using the provided userId and token, then redirects to https://findjob.nu on success.");
         }
     }
 }
