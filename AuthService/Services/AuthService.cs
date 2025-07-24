@@ -39,21 +39,27 @@ namespace AuthService.Services
 
             if (result.Succeeded)
             {
-                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                var domain = _configuration["Domain"] ?? "";
-
-                var confirmationLink = $"https://auth.findjob.nu/api/auth/confirm-email?userId={Uri.EscapeDataString(user.Id)}&token={Uri.EscapeDataString(token)}";
-
-                Console.WriteLine("Attempting to send confirmation email...");
-                try
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                Task.Run(() =>
                 {
-                    await SendEmailAsync(user.Email, "Confirm your email", $"Please confirm your account by clicking this link: <a href=\"{confirmationLink}\">Confirm Email</a>");
-                    Console.WriteLine("Email sent successfully.");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Email sending failed: {ex}");
-                }
+                    var token = _userManager.GenerateEmailConfirmationTokenAsync(user).GetAwaiter().GetResult();
+                    var domain = _configuration["Domain"] ?? "";
+
+                    var confirmationLink = $"https://auth.findjob.nu/api/auth/confirm-email?userId={Uri.EscapeDataString(user.Id)}&token={Uri.EscapeDataString(token)}";
+
+                    Console.WriteLine("Attempting to send confirmation email...");
+                    try
+                    {
+                        SendEmailAsync(user.Email, "Confirm your email", $"Please confirm your account by clicking this link: <a href=\"{confirmationLink}\">Confirm Email</a>");
+                        Console.WriteLine("Email sent successfully.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Email sending failed: {ex}");
+                    }
+                });
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+
 
                 return await GenerateAuthResponseAsync(user);
             }
@@ -285,7 +291,7 @@ namespace AuthService.Services
             var port = int.Parse(smtpSection["Port"] ?? "25");
             var username = smtpSection["Username"];
             var password = smtpSection["Password"];
-            var from = smtpSection["From"];
+            var from = smtpSection["From"] ?? "noreply@findjob.nu";
 
             using var client = new System.Net.Mail.SmtpClient(host, port)
             {

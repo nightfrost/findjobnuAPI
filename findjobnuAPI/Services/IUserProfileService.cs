@@ -9,5 +9,6 @@ namespace findjobnuAPI.Services
         Task<bool> UpdateAsync(int id, UserProfile userProfile, string authenticatedUserId);
         Task<List<string>> GetSavedJobsByUserIdAsync(string userId);
         Task<bool> SaveJobAsync(string userId, string jobId);
+        Task<bool> RemoveSavedJobAsync(string userId, string jobId);
     }
 }

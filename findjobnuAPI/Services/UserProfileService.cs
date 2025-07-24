@@ -42,6 +42,8 @@ namespace findjobnuAPI.Services
                 entity.DateOfBirth = userProfile.DateOfBirth;
                 entity.PhoneNumber = userProfile.PhoneNumber;
                 entity.Address = userProfile.Address;
+                entity.City = userProfile.City;
+                entity.LastUpdatedAt = DateTime.UtcNow;
 
                 await _db.SaveChangesAsync();
                 return true;
@@ -60,6 +62,7 @@ namespace findjobnuAPI.Services
                         .SetProperty(m => m.Address, userProfile.Address)
                         .SetProperty(m => m.LastUpdatedAt, DateTime.UtcNow)
                         .SetProperty(m => m.SavedJobPosts, userProfile.SavedJobPosts)
+                        .SetProperty(m => m.City, userProfile.City)
                     );
                 return affected == 1;
             }
@@ -92,6 +95,21 @@ namespace findjobnuAPI.Services
             if (!userProfile.SavedJobPosts.Contains(jobId))
             {
                 userProfile.SavedJobPosts.Add(jobId);
+                await _db.SaveChangesAsync();
+                return true;
+            }
+            return false;
+        }
+
+        public async Task<bool> RemoveSavedJobAsync(string userId, string jobId)
+        {
+            var userProfile = await _db.UserProfile
+                .FirstOrDefaultAsync(x => x.UserId == userId);
+
+            if (userProfile == null || userProfile.SavedJobPosts == null) return false;
+            
+            if (userProfile.SavedJobPosts.Remove(jobId))
+            {
                 await _db.SaveChangesAsync();
                 return true;
             }

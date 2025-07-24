@@ -58,5 +58,13 @@ public static class UserProfileEndpoints
         })
         .WithName("SaveJob")
         .WithOpenApi();
+
+        group.MapDelete("/{userId}/savedjobs/{jobId}", async Task<Results<Ok, NotFound>> (string userId, string jobId, IUserProfileService service) =>
+        {
+            var success = await service.RemoveSavedJobAsync(userId, jobId);
+            return success ? TypedResults.Ok() : TypedResults.NotFound();
+        })
+        .WithName("DeleteSavedJob")
+        .WithOpenApi();
     }
 }
