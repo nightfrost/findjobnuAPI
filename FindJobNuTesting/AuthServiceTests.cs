@@ -1,0 +1,166 @@
+﻿using AuthService.Entities;
+using AuthService.Models;
+using AuthService.Data;
+using AuthService.Services;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Moq;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Xunit;
+
+namespace AuthService.Tests.Services
+{
+    public class AuthServiceTests
+    {
+        private ApplicationDbContext GetInMemoryDbContext()
+        {
+            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            return new ApplicationDbContext(options);
+        }
+
+        private AuthService.Services.AuthService GetServiceWithMocks(ApplicationDbContext dbContext,
+            out Mock<UserManager<ApplicationUser>> userManagerMock,
+            out Mock<SignInManager<ApplicationUser>> signInManagerMock,
+            out Mock<IConfiguration> configurationMock)
+        {
+            var userStoreMock = new Mock<IUserStore<ApplicationUser>>();
+            userManagerMock = new Mock<UserManager<ApplicationUser>>(
+                userStoreMock.Object, null, null, null, null, null, null, null, null);
+
+            var contextAccessorMock = new Mock<Microsoft.AspNetCore.Http.IHttpContextAccessor>();
+            var claimsFactoryMock = new Mock<IUserClaimsPrincipalFactory<ApplicationUser>>();
+            signInManagerMock = new Mock<SignInManager<ApplicationUser>>(
+                userManagerMock.Object,
+                contextAccessorMock.Object,
+                claimsFactoryMock.Object,
+                null, null, null, null);
+
+            configurationMock = new Mock<IConfiguration>();
+            configurationMock.Setup(x => x.GetSection("JwtSettings")["SecretKey"])
+                .Returns("THIS_IS_A_VERY_LONG_AND_SECURE_KEY_THAT_SHOULD_BE_AT_LEAST_32_BYTES_FOR_PRODUCTION_ENVIRONMENTS");
+            configurationMock.Setup(x => x.GetSection("JwtSettings")["Issuer"]).Returns("issuer");
+            configurationMock.Setup(x => x.GetSection("JwtSettings")["Audience"]).Returns("audience");
+            configurationMock.Setup(x => x.GetSection("JwtSettings")["AccessTokenExpirationMinutes"]).Returns("60");
+            configurationMock.Setup(x => x.GetSection("JwtSettings")["RefreshTokenExpirationDays"]).Returns("7");
+            configurationMock.Setup(x => x["Domain"]).Returns("testdomain.com");
+
+            return new AuthService.Services.AuthService(
+                userManagerMock.Object,
+                signInManagerMock.Object,
+                configurationMock.Object,
+                dbContext);
+        }
+
+        [Fact]
+        public async Task RegisterAsync_Success_ReturnsAuthResponse()
+        {
+            using var dbContext = GetInMemoryDbContext();
+            var service = GetServiceWithMocks(dbContext, out var userManagerMock, out _, out var configurationMock);
+
+            var request = new RegisterRequest { Email = "test@example.com", Password = "Password123", Phone = "1234567890" };
+            var user = new ApplicationUser { Id = "user1", Email = request.Email, UserName = request.Email, PhoneNumber = request.Phone };
+
+            userManagerMock.Setup(x => x.CreateAsync(It.IsAny<ApplicationUser>(), request.Password))
+                .ReturnsAsync(IdentityResult.Success);
+            userManagerMock.Setup(x => x.GenerateEmailConfirmationTokenAsync(It.IsAny<ApplicationUser>()))
+                .ReturnsAsync("token");
+            userManagerMock.Setup(x => x.GetRolesAsync(It.IsAny<ApplicationUser>()))
+                .ReturnsAsync(new List<string>());
+
+            var response = await service.RegisterAsync(request);
+
+            Assert.NotNull(response);
+            Assert.Equal(request.Email, response.Email);
+        }
+
+        [Fact]
+        public async Task RegisterAsync_Failure_ReturnsNull()
+        {
+            using var dbContext = GetInMemoryDbContext();
+            var service = GetServiceWithMocks(dbContext, out var userManagerMock, out _, out _);
+
+            var request = new RegisterRequest { Email = "fail@example.com", Password = "Password123" };
+            var identityError = new IdentityError { Description = "Error" };
+            var failedResult = IdentityResult.Failed(identityError);
+
+            userManagerMock.Setup(x => x.CreateAsync(It.IsAny<ApplicationUser>(), request.Password))
+                .ReturnsAsync(failedResult);
+
+            var response = await service.RegisterAsync(request);
+
+            Assert.Null(response);
+        }
+
+        [Fact]
+        public async Task LoginAsync_Success_ReturnsAuthResponse()
+        {
+            using var dbContext = GetInMemoryDbContext();
+            var service = GetServiceWithMocks(dbContext, out var userManagerMock, out var signInManagerMock, out var configurationMock);
+
+            var request = new LoginRequest { Email = "test@example.com", Password = "Password123" };
+            var user = new ApplicationUser { Id = "user1", Email = request.Email, UserName = request.Email };
+
+            userManagerMock.Setup(x => x.FindByEmailAsync(request.Email)).ReturnsAsync(user);
+            signInManagerMock.Setup(x => x.CheckPasswordSignInAsync(user, request.Password, false))
+                .ReturnsAsync(SignInResult.Success);
+            userManagerMock.Setup(x => x.GetRolesAsync(user)).ReturnsAsync(new List<string>());
+
+            var response = await service.LoginAsync(request);
+
+            Assert.NotNull(response);
+            Assert.Equal(request.Email, response.Email);
+        }
+
+        [Fact]
+        public async Task LoginAsync_UserNotFound_ReturnsNull()
+        {
+            using var dbContext = GetInMemoryDbContext();
+            var service = GetServiceWithMocks(dbContext, out var userManagerMock, out var signInManagerMock, out _);
+
+            var request = new LoginRequest { Email = "notfound@example.com", Password = "Password123" };
+            userManagerMock.Setup(x => x.FindByEmailAsync(request.Email)).ReturnsAsync((ApplicationUser)null);
+
+            var response = await service.LoginAsync(request);
+
+            Assert.Null(response);
+        }
+
+        [Fact]
+        public async Task ConfirmEmailAsync_Success_ReturnsTrue()
+        {
+            using var dbContext = GetInMemoryDbContext();
+            var service = GetServiceWithMocks(dbContext, out var userManagerMock, out _, out _);
+
+            var userId = "user1";
+            var token = "token";
+            var user = new ApplicationUser { Id = userId };
+
+            userManagerMock.Setup(x => x.FindByIdAsync(userId)).ReturnsAsync(user);
+            userManagerMock.Setup(x => x.ConfirmEmailAsync(user, token)).ReturnsAsync(IdentityResult.Success);
+
+            var result = await service.ConfirmEmailAsync(userId, token);
+
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task ConfirmEmailAsync_UserNotFound_ReturnsFalse()
+        {
+            using var dbContext = GetInMemoryDbContext();
+            var service = GetServiceWithMocks(dbContext, out var userManagerMock, out _, out _);
+
+            var userId = "user2";
+            var token = "token";
+            userManagerMock.Setup(x => x.FindByIdAsync(userId)).ReturnsAsync((ApplicationUser)null);
+
+            var result = await service.ConfirmEmailAsync(userId, token);
+
+            Assert.False(result);
+        }
+    }
+}
