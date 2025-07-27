@@ -1,10 +1,13 @@
 ﻿using AuthService.Data;
 using AuthService.Entities;
+using AuthService.MessageBroker;
+using AuthService.MessageBroker.Services;
 using AuthService.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json.Linq;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -18,13 +21,15 @@ namespace AuthService.Services
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _dbContext;
+        private readonly IRabbitMQPublisher<EmailConfirmationDto> _rabbitMQPublisher;
 
-        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, ApplicationDbContext dbContext)
+        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, ApplicationDbContext dbContext, IRabbitMQPublisher<EmailConfirmationDto> publisher)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _configuration = configuration;
             _dbContext = dbContext;
+            _rabbitMQPublisher = publisher;
         }
 
         public async Task<AuthResponse?> RegisterAsync(RegisterRequest request)
@@ -39,25 +44,40 @@ namespace AuthService.Services
 
             if (result.Succeeded)
             {
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                Task.Run(() =>
+                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                var domain = _configuration["Domain"] ?? "";
+                var confirmationLink = $"https://{domain}/api/auth/confirm-email?userId={Uri.EscapeDataString(user.Id)}&token={Uri.EscapeDataString(token)}";
+                var body = $"Please confirm your account by clicking this link: <a href=\"{confirmationLink}\">Confirm Email</a>";
+                var message = new EmailConfirmationDto
                 {
-                    var token = _userManager.GenerateEmailConfirmationTokenAsync(user).GetAwaiter().GetResult();
-                    var domain = _configuration["Domain"] ?? "";
+                    Email = user.Email!,
+                    Body = body,
+                    ConfiirmationLink = confirmationLink
+                };
 
-                    var confirmationLink = $"https://auth.findjob.nu/api/auth/confirm-email?userId={Uri.EscapeDataString(user.Id)}&token={Uri.EscapeDataString(token)}";
+                await _rabbitMQPublisher.PublishMessageAsync(message, RabbitMQQueues.EmailConfirmationQueue);
 
-                    Console.WriteLine("Attempting to send confirmation email...");
-                    try
-                    {
-                        SendEmailAsync(user.Email, "Confirm your email", $"Please confirm your account by clicking this link: <a href=\"{confirmationLink}\">Confirm Email</a>");
-                        Console.WriteLine("Email sent successfully.");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Email sending failed: {ex}");
-                    }
-                });
+
+
+
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                //Task.Run(() =>
+                //{
+                //    var token = _userManager.GenerateEmailConfirmationTokenAsync(user).GetAwaiter().GetResult();
+
+                //    var confirmationLink = $"https://auth.findjob.nu/api/auth/confirm-email?userId={Uri.EscapeDataString(user.Id)}&token={Uri.EscapeDataString(token)}";
+
+                //    Console.WriteLine("Attempting to send confirmation email...");
+                //    try
+                //    {
+                //        SendEmailAsync(user.Email, "Confirm your email", $"Please confirm your account by clicking this link: <a href=\"{confirmationLink}\">Confirm Email</a>");
+                //        Console.WriteLine("Email sent successfully.");
+                //    }
+                //    catch (Exception ex)
+                //    {
+                //        Console.WriteLine($"Email sending failed: {ex}");
+                //    }
+                //});
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
 
