@@ -13,12 +13,12 @@ namespace AuthService.Endpoints
 
             authGroup.MapPost("/register", async (RegisterRequest request, IAuthService authService) =>
             {
-                var authResponse = await authService.RegisterAsync(request);
-                if (authResponse == null)
+                var registerResult = await authService.RegisterAsync(request);
+                if (!registerResult.Success)
                 {
-                    return Results.BadRequest(new { message = "Registration failed. Email might already be taken or password requirements not met." });
+                    return Results.BadRequest(new { message = registerResult.ErrorMessage ?? "Registration failed." });
                 }
-                return Results.Ok(authResponse);
+                return Results.Ok(registerResult.AuthResponse);
             })
             .WithOpenApi()
             .Produces<AuthResponse>(StatusCodes.Status200OK)

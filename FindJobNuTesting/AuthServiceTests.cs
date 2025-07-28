@@ -72,14 +72,16 @@ namespace AuthService.Tests.Services
             userManagerMock.Setup(x => x.GetRolesAsync(It.IsAny<ApplicationUser>()))
                 .ReturnsAsync(new List<string>());
 
-            var response = await service.RegisterAsync(request);
+            var result = await service.RegisterAsync(request);
 
-            Assert.NotNull(response);
-            Assert.Equal(request.Email, response.Email);
+            Assert.NotNull(result);
+            Assert.True(result.Success);
+            Assert.NotNull(result.AuthResponse);
+            Assert.Equal(request.Email, result.AuthResponse.Email);
         }
 
         [Fact]
-        public async Task RegisterAsync_Failure_ReturnsNull()
+        public async Task RegisterAsync_Failure_ReturnsErrorMessage()
         {
             using var dbContext = GetInMemoryDbContext();
             var service = GetServiceWithMocks(dbContext, out var userManagerMock, out _, out _);
@@ -91,9 +93,12 @@ namespace AuthService.Tests.Services
             userManagerMock.Setup(x => x.CreateAsync(It.IsAny<ApplicationUser>(), request.Password))
                 .ReturnsAsync(failedResult);
 
-            var response = await service.RegisterAsync(request);
+            var result = await service.RegisterAsync(request);
 
-            Assert.Null(response);
+            Assert.NotNull(result);
+            Assert.False(result.Success);
+            Assert.NotNull(result.ErrorMessage);
+            Assert.Contains("Error", result.ErrorMessage);
         }
 
         [Fact]

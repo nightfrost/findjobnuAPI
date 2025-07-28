@@ -27,7 +27,7 @@ namespace AuthService.Services
             _dbContext = dbContext;
         }
 
-        public async Task<AuthResponse?> RegisterAsync(RegisterRequest request)
+        public async Task<RegisterResult> RegisterAsync(RegisterRequest request)
         {
             var user = new ApplicationUser
             {
@@ -61,11 +61,14 @@ namespace AuthService.Services
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
 
-                return await GenerateAuthResponseAsync(user);
+                var authResponse = await GenerateAuthResponseAsync(user);
+                return new RegisterResult { Success = true, AuthResponse = authResponse };
             }
 
-            Console.WriteLine("Registration Errors: " + string.Join(", ", result.Errors.Select(e => e.Description)));
-            return null;
+            // Compose error message from IdentityResult
+            string errorMessage = string.Join(" ", result.Errors.Select(e => e.Description));
+            Console.WriteLine("Registration Errors: " + errorMessage);
+            return new RegisterResult { Success = false, ErrorMessage = errorMessage };
         }
 
         public async Task<AuthResponse?> LoginAsync(LoginRequest request)
