@@ -77,5 +77,62 @@ namespace findjobnuAPI.Tests.Services
             Assert.Contains("Design", categories);
             Assert.Equal(2, categories.Count);
         }
+
+        [Fact]
+        public async Task GetSavedJobsByUserId_ReturnsPagedList_WhenUserHasSavedJobs()
+        {
+            var options = new DbContextOptionsBuilder<FindjobnuContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            using var context = new FindjobnuContext(options);
+            // Add jobs
+            var job1 = new JobIndexPosts { JobID = 10, JobTitle = "Dev", Category = "IT", JobLocation = "NY", Published = DateTime.UtcNow };
+            var job2 = new JobIndexPosts { JobID = 20, JobTitle = "QA", Category = "IT", JobLocation = "NY", Published = DateTime.UtcNow };
+            context.JobIndexPosts.AddRange(job1, job2);
+            // Add user with saved jobs
+            var user = new UserProfile { Id = 1, UserId = "userX", FirstName = "Test", LastName = "User", SavedJobPosts = new List<string> { "10", "20" } };
+            context.UserProfile.Add(user);
+            context.SaveChanges();
+
+            var service = new JobIndexPostsService(context);
+            var pagedList = await service.GetSavedJobsByUserId("userX", 1);
+
+            Assert.NotNull(pagedList);
+            Assert.Equal(2, pagedList.TotalCount);
+            Assert.Equal(2, pagedList.Items.Count());
+        }
+
+        [Fact]
+        public async Task GetSavedJobsByUserId_ReturnsEmpty_WhenUserHasNoSavedJobs()
+        {
+            var options = new DbContextOptionsBuilder<FindjobnuContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            using var context = new FindjobnuContext(options);
+            var user = new UserProfile { Id = 2, UserId = "userY", FirstName = "Test", LastName = "User", SavedJobPosts = new List<string>() };
+            context.UserProfile.Add(user);
+            context.SaveChanges();
+
+            var service = new JobIndexPostsService(context);
+            var pagedList = await service.GetSavedJobsByUserId("userY", 1);
+
+            Assert.NotNull(pagedList);
+            Assert.Equal(0, pagedList.TotalCount);
+            Assert.Empty(pagedList.Items);
+        }
+
+        [Fact]
+        public async Task GetSavedJobsByUserId_ReturnsEmpty_WhenUserNotFound()
+        {
+            var options = new DbContextOptionsBuilder<FindjobnuContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            using var context = new FindjobnuContext(options);
+            var service = new JobIndexPostsService(context);
+            var pagedList = await service.GetSavedJobsByUserId("no_such_user", 1);
+            Assert.NotNull(pagedList);
+            Assert.Equal(0, pagedList.TotalCount);
+            Assert.Empty(pagedList.Items);
+        }
     }
 }

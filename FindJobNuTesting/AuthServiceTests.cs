@@ -162,5 +162,46 @@ namespace AuthService.Tests.Services
 
             Assert.False(result);
         }
+
+        [Fact]
+        public async Task RefreshTokenAsync_ReturnsNull_WhenPrincipalIsNull()
+        {
+            using var dbContext = GetInMemoryDbContext();
+            var service = GetServiceWithMocks(dbContext, out var userManagerMock, out _, out _);
+            var request = new TokenRefreshRequest { AccessToken = "invalid", RefreshToken = "refresh" };
+            // Simulate GetPrincipalFromExpiredToken returns null by passing an invalid token
+            var result = await service.RefreshTokenAsync(request);
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public async Task RevokeRefreshTokenAsync_ReturnsFalse_WhenTokenNotFound()
+        {
+            using var dbContext = GetInMemoryDbContext();
+            var service = GetServiceWithMocks(dbContext, out _, out _, out _);
+            var result = await service.RevokeRefreshTokenAsync("userId", "notfoundtoken");
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task RevokeRefreshTokenAsync_ReturnsTrue_WhenTokenIsActive()
+        {
+            using var dbContext = GetInMemoryDbContext();
+            var service = GetServiceWithMocks(dbContext, out _, out _, out _);
+            var token = new RefreshToken
+            {
+                Token = "token1",
+                UserId = "userId",
+                Expires = DateTime.UtcNow.AddDays(1),
+                Created = DateTime.UtcNow
+            };
+            dbContext.RefreshTokens.Add(token);
+            dbContext.SaveChanges();
+            var result = await service.RevokeRefreshTokenAsync("userId", "token1");
+            Assert.True(result);
+            var dbToken = await dbContext.RefreshTokens.FirstOrDefaultAsync(t => t.Token == "token1");
+            Assert.NotNull(dbToken);
+            Assert.NotNull(dbToken.Revoked);
+        }
     }
 }

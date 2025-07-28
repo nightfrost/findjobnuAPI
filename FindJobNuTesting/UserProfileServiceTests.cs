@@ -61,5 +61,98 @@ namespace findjobnuAPI.Tests.Services
             var dbUser = await context.UserProfile.FindAsync(2);
             Assert.Equal("Alicia", dbUser!.FirstName);
         }
+
+        [Fact]
+        public async Task GetSavedJobsByUserIdAsync_ReturnsSavedJobs()
+        {
+            var service = GetServiceWithInMemoryDb(out var context);
+            var user = new UserProfile { Id = 3, UserId = "user4", FirstName = "Bob", LastName = "Smith", SavedJobPosts = new List<string> { "1", "2" } };
+            context.UserProfile.Add(user);
+            await context.SaveChangesAsync();
+
+            var result = await service.GetSavedJobsByUserIdAsync("user4");
+
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Count);
+            Assert.Contains("1", result);
+            Assert.Contains("2", result);
+        }
+
+        [Fact]
+        public async Task GetSavedJobsByUserIdAsync_ReturnsEmptyList_WhenUserNotFound()
+        {
+            var service = GetServiceWithInMemoryDb(out var context);
+            var result = await service.GetSavedJobsByUserIdAsync("no_user");
+            Assert.NotNull(result);
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public async Task SaveJobAsync_AddsJobToSavedList()
+        {
+            var service = GetServiceWithInMemoryDb(out var context);
+            var user = new UserProfile { Id = 4, UserId = "user5", FirstName = "Eve", LastName = "Adams", SavedJobPosts = new List<string>() };
+            context.UserProfile.Add(user);
+            await context.SaveChangesAsync();
+
+            var result = await service.SaveJobAsync("user5", "99");
+            Assert.True(result);
+            var dbUser = await context.UserProfile.FirstOrDefaultAsync(u => u.UserId == "user5");
+            Assert.Contains("99", dbUser!.SavedJobPosts);
+        }
+
+        [Fact]
+        public async Task SaveJobAsync_DoesNotAddDuplicateJob()
+        {
+            var service = GetServiceWithInMemoryDb(out var context);
+            var user = new UserProfile { Id = 5, UserId = "user6", FirstName = "Sam", LastName = "Lee", SavedJobPosts = new List<string> { "100" } };
+            context.UserProfile.Add(user);
+            await context.SaveChangesAsync();
+
+            var result = await service.SaveJobAsync("user6", "100");
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task SaveJobAsync_ReturnsFalse_WhenUserNotFound()
+        {
+            var service = GetServiceWithInMemoryDb(out var context);
+            var result = await service.SaveJobAsync("no_user", "1");
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task RemoveSavedJobAsync_RemovesJobFromSavedList()
+        {
+            var service = GetServiceWithInMemoryDb(out var context);
+            var user = new UserProfile { Id = 6, UserId = "user7", FirstName = "Tom", LastName = "Jones", SavedJobPosts = new List<string> { "200" } };
+            context.UserProfile.Add(user);
+            await context.SaveChangesAsync();
+
+            var result = await service.RemoveSavedJobAsync("user7", "200");
+            Assert.True(result);
+            var dbUser = await context.UserProfile.FirstOrDefaultAsync(u => u.UserId == "user7");
+            Assert.DoesNotContain("200", dbUser!.SavedJobPosts);
+        }
+
+        [Fact]
+        public async Task RemoveSavedJobAsync_ReturnsFalse_WhenJobNotInList()
+        {
+            var service = GetServiceWithInMemoryDb(out var context);
+            var user = new UserProfile { Id = 8, UserId = "user8", FirstName = "Ann", LastName = "White", SavedJobPosts = new List<string> { "300" } };
+            context.UserProfile.Add(user);
+            await context.SaveChangesAsync();
+
+            var result = await service.RemoveSavedJobAsync("user8", "999");
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task RemoveSavedJobAsync_ReturnsFalse_WhenUserNotFound()
+        {
+            var service = GetServiceWithInMemoryDb(out var context);
+            var result = await service.RemoveSavedJobAsync("no_user", "1");
+            Assert.False(result);
+        }
     }
 }
