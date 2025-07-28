@@ -40,13 +40,22 @@ namespace findjobnuAPI.Services
             if (!string.IsNullOrEmpty(category))
                 query = query.Where(j => j.Category != null && j.Category.Contains(category));
             if (!string.IsNullOrEmpty(searchTerm))
-                query = query.Where(j => j.JobTitle != null && j.JobTitle.Contains(searchTerm));
+            {
+                query = query.Where(j =>
+                    (j.JobTitle != null && j.JobTitle.Contains(searchTerm)) ||
+                    (j.JobLocation != null && j.JobLocation.Contains(searchTerm)) ||
+                    (j.Category != null && j.Category.Contains(searchTerm)) ||
+                    (j.JobDescription != null && j.JobDescription.Contains(searchTerm))
+                );
+            }
             if (postedAfter.HasValue)
                 query = query.Where(j => j.Published >= postedAfter.Value);
             if (postedBefore.HasValue)
                 query = query.Where(j => j.Published <= postedBefore.Value);
 
             var totalCount = await query.CountAsync();
+            if (totalCount == 0) return null;
+
             var items = await query
                 .OrderBy(j => j.JobID)
                 .Skip((page - 1) * pageSize)
@@ -54,7 +63,6 @@ namespace findjobnuAPI.Services
                 .AsNoTracking()
                 .ToListAsync();
 
-            if (!items.Any()) return null;
             return new PagedList<JobIndexPosts>(totalCount, pageSize, page, items);
         }
 
