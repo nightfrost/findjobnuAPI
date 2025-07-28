@@ -10,5 +10,9 @@ namespace findjobnuAPI.Services
         Task<List<string>> GetSavedJobsByUserIdAsync(string userId);
         Task<bool> SaveJobAsync(string userId, string jobId);
         Task<bool> RemoveSavedJobAsync(string userId, string jobId);
+        
+        // LinkedIn integration methods
+        Task<UserProfile?> GetUserProfileWithLinkedInAsync(string userId);
+        Task<bool> HasLinkedInConnectedAsync(string userId);
     }
 }

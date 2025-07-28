@@ -50,8 +50,14 @@ namespace findjobnuAPI
                 });
 
             builder.Services.AddAuthorization();
+            
+            // Register services
             builder.Services.AddScoped<IUserProfileService, UserProfileService>();
             builder.Services.AddScoped<IJobIndexPostsService, JobIndexPostsService>();
+            builder.Services.AddScoped<ILinkedInService, LinkedInService>();
+            
+            // Register HttpClient for LinkedIn service
+            builder.Services.AddHttpClient<ILinkedInService, LinkedInService>();
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
@@ -90,6 +96,7 @@ namespace findjobnuAPI
             app.MapJobIndexPostsEndpoints();
             app.MapCitiesEndpoints();
             app.MapUserProfileEndpoints();
+            app.MapLinkedInEndpoints();
 
             app.Run();
         }

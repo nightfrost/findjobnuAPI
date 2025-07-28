@@ -18,6 +18,20 @@ namespace findjobnuAPI.Services
             return await _db.UserProfile.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == id);
         }
 
+        public async Task<UserProfile?> GetUserProfileWithLinkedInAsync(string userId)
+        {
+            return await _db.UserProfile
+                .AsNoTracking()
+                .Include(up => up.LinkedInProfile)
+                .FirstOrDefaultAsync(x => x.UserId == userId);
+        }
+
+        public async Task<bool> HasLinkedInConnectedAsync(string userId)
+        {
+            var userProfile = await GetUserProfileWithLinkedInAsync(userId);
+            return userProfile?.HasLinkedInConnected ?? false;
+        }
+
         public async Task<UserProfile?> CreateAsync(UserProfile userProfile)
         {
             _db.UserProfile.Add(userProfile);

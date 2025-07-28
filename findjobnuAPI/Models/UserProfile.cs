@@ -19,5 +19,9 @@ namespace findjobnuAPI.Models
         public string? City { get; set; } = string.Empty;
         public DateTime? LastUpdatedAt { get; set; }
         public List<string>? SavedJobPosts { get; set; } = [];
+        
+        // LinkedIn Integration
+        public LinkedInProfile? LinkedInProfile { get; set; }
+        public bool HasLinkedInConnected => LinkedInProfile != null && !string.IsNullOrEmpty(LinkedInProfile.LinkedInId);
     }
 }

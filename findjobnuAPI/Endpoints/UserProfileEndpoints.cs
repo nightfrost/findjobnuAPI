@@ -22,6 +22,22 @@ public static class UserProfileEndpoints
         .WithName("GetUserProfileByUserId")
         .WithOpenApi();
 
+        group.MapGet("/{userid}/with-linkedin", async Task<Results<Ok<UserProfile>, NotFound>> (string userid, IUserProfileService service) =>
+        {
+            var model = await service.GetUserProfileWithLinkedInAsync(userid);
+            return model is not null ? TypedResults.Ok(model) : TypedResults.NotFound();
+        })
+        .WithName("GetUserProfileWithLinkedIn")
+        .WithOpenApi();
+
+        group.MapGet("/{userid}/linkedin-status", async Task<Results<Ok<bool>, NotFound>> (string userid, IUserProfileService service) =>
+        {
+            var hasLinkedIn = await service.HasLinkedInConnectedAsync(userid);
+            return TypedResults.Ok(true);
+        })
+        .WithName("GetLinkedInConnectionStatus")
+        .WithOpenApi();
+
         group.MapPut("/{id}", async Task<Results<Ok, NotFound, ForbidHttpResult>> (int id, UserProfile userProfile, IUserProfileService service, HttpContext context) =>
         {
             var authenticatedUserId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
