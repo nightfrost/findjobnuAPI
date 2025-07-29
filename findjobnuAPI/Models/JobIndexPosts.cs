@@ -13,5 +13,6 @@
         public string? Category { get; set; } = string.Empty;
         public Byte[]? BannerPicture { get; set; } = [];
         public Byte[]? FooterPicture { get; set; } = [];
+        public List<string>? Keywords { get; set; } = [];
     }
 }

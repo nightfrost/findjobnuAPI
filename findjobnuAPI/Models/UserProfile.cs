@@ -19,5 +19,6 @@ namespace findjobnuAPI.Models
         public string? City { get; set; } = string.Empty;
         public DateTime? LastUpdatedAt { get; set; }
         public List<string>? SavedJobPosts { get; set; } = [];
+        public List<string>? Keywords { get; set; } = [];
     }
 }

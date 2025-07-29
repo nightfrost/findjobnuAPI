@@ -12,7 +12,8 @@ namespace findjobnuAPI.Repositories.Context
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            modelBuilder.Entity<JobIndexPosts>().ToTable("JobIndexPostings").HasKey(s => s.JobID);
+            modelBuilder.Entity<JobIndexPosts>().ToTable("JobIndexPostingsExtended").HasKey(s => s.JobID);
+            modelBuilder.Entity<JobIndexPosts>().HasIndex(s => s.JobUrl).IsUnique();
             modelBuilder.Entity<Cities>().ToTable("Cities").HasKey(s => s.Id);
             modelBuilder.Entity<UserProfile>().HasKey(up => up.Id);
 
@@ -30,6 +31,18 @@ namespace findjobnuAPI.Repositories.Context
             modelBuilder.Entity<UserProfile>()
                 .HasIndex(up => up.UserId)
                 .IsUnique();
+            modelBuilder.Entity<UserProfile>()
+                .Property(up => up.Keywords)
+                .HasConversion(
+                    v => string.Join(",", v ?? new List<string>()),
+                    v => v.Split(',', System.StringSplitOptions.RemoveEmptyEntries).ToList()
+                );
+            modelBuilder.Entity<JobIndexPosts>()
+                .Property(j => j.Keywords)
+                .HasConversion(
+                    v => string.Join(",", v ?? new List<string>()),
+                    v => v.Split(',', System.StringSplitOptions.RemoveEmptyEntries).ToList()
+                );
         }
     }
 }

@@ -10,5 +10,6 @@ namespace findjobnuAPI.Services
         Task<List<string>> GetSavedJobsByUserIdAsync(string userId);
         Task<bool> SaveJobAsync(string userId, string jobId);
         Task<bool> RemoveSavedJobAsync(string userId, string jobId);
+        // No new methods needed for Keywords, as it's part of UserProfile
     }
 }

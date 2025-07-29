@@ -44,6 +44,7 @@ namespace findjobnuAPI.Services
                 entity.Address = userProfile.Address;
                 entity.City = userProfile.City;
                 entity.LastUpdatedAt = DateTime.UtcNow;
+                entity.Keywords = userProfile.Keywords;
 
                 await _db.SaveChangesAsync();
                 return true;
@@ -63,6 +64,7 @@ namespace findjobnuAPI.Services
                         .SetProperty(m => m.LastUpdatedAt, DateTime.UtcNow)
                         .SetProperty(m => m.SavedJobPosts, userProfile.SavedJobPosts)
                         .SetProperty(m => m.City, userProfile.City)
+                        .SetProperty(m => m.Keywords, userProfile.Keywords)
                     );
                 return affected == 1;
             }
