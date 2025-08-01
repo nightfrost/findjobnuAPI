@@ -130,7 +130,7 @@ namespace AuthService.Endpoints
             .Produces(StatusCodes.Status204NoContent)
             .WithName("Verify LinkedIn connection.")
             .WithSummary("Confirms wether a user has verified through LinkedIn.")
-            .WithDescription("Confirms the user's LinkedIn verification using the provided userId, then returns true or false.");
+            .WithDescription("Checks if the user has verified their LinkedIn account using the provided userId. Returns the LinkedInId on success, or NoContent if the user is not verified or not a LinkedIn user.");
         }
     }
 }
