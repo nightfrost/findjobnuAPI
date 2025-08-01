@@ -2,10 +2,11 @@
 {
     public interface IAuthService
     {
-        Task<RegisterResult> RegisterAsync(RegisterRequest request);
-        Task<AuthResponse?> LoginAsync(LoginRequest request);
+        Task<RegisterResult> RegisterAsync(RegisterRequest request, bool isLinkedInUser = false);
+        Task<LoginResult> LoginAsync(LoginRequest request, bool isLinkedInUser = false);
         Task<AuthResponse?> RefreshTokenAsync(TokenRefreshRequest request);
         Task<bool> RevokeRefreshTokenAsync(string userId, string refreshToken);
         Task<bool> ConfirmEmailAsync(string userId, string token);
+        Task<bool> IsLinkedInUserOrHasVerifiedTheirLinkedIn(string userId);
     }
 }

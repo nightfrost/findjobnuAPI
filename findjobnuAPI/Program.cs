@@ -6,6 +6,7 @@ using findjobnuAPI.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.IdentityModel.Protocols.Configuration;
 
 namespace findjobnuAPI
 {
@@ -18,7 +19,7 @@ namespace findjobnuAPI
             builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
 
-            var connectionString = builder.Configuration.GetConnectionString("FindjobnuConnection") ?? throw new InvalidOperationException("Connection string 'FindjobnuConnection' not found.");
+            var connectionString = builder.Configuration.GetConnectionString("FindjobnuConnection") ?? throw new InvalidConfigurationException("Connection string 'FindjobnuConnection' not found.");
             builder.Services.AddDbContext<FindjobnuContext>(options =>
                 options.UseSqlServer(connectionString));
 
@@ -31,7 +32,7 @@ namespace findjobnuAPI
                 string.IsNullOrEmpty(issuer) || 
                 string.IsNullOrEmpty(audience))
             {
-                throw new InvalidOperationException("JWT settings are not properly configured in appsettings.json.");
+                throw new InvalidConfigurationException("JWT settings are not properly configured in appsettings.json.");
             }
 
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -50,8 +51,25 @@ namespace findjobnuAPI
                 });
 
             builder.Services.AddAuthorization();
+            builder.Services.AddHttpClient();
             builder.Services.AddScoped<IUserProfileService, UserProfileService>();
             builder.Services.AddScoped<IJobIndexPostsService, JobIndexPostsService>();
+            builder.Services.AddScoped<ILinkedInProfileService>(provider =>
+            {
+                var config = provider.GetRequiredService<IConfiguration>();
+                var dbContext = provider.GetRequiredService<FindjobnuContext>();
+                var scraperSection = config.GetSection("LinkedInScraper") ?? throw new InvalidConfigurationException("LinkedInScraper section in Appsettings missing.");
+                var scriptDirectory = scraperSection["LinkedInImporterPath"] ?? throw new InvalidConfigurationException("LinkedInScraper ScriptDirectory path missing.");
+                var linkedInEmail = scraperSection["Username"] ?? throw new InvalidConfigurationException("LinkedInScraper E-mail missing.");
+                var linkedInPassword = scraperSection["Password"] ?? throw new InvalidConfigurationException("LinkedInScraper Password missing.");
+                return new LinkedInProfileService(
+                    dbContext,
+                    scriptDirectory,
+                    linkedInEmail,
+                    linkedInPassword,
+                    provider.GetRequiredService<ILogger<LinkedInProfileService>>()
+                );
+            });
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

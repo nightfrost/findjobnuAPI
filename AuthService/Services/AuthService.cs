@@ -18,22 +18,29 @@ namespace AuthService.Services
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _dbContext;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, ApplicationDbContext dbContext)
+        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, ApplicationDbContext dbContext, ILogger<AuthService> logger)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _configuration = configuration;
             _dbContext = dbContext;
+            _logger = logger;
         }
 
-        public async Task<RegisterResult> RegisterAsync(RegisterRequest request)
+        public async Task<RegisterResult> RegisterAsync(RegisterRequest request, bool isLinkedInUser = false)
         {
             var user = new ApplicationUser
             {
                 UserName = request.Email,
                 Email = request.Email,
-                PhoneNumber = request.Phone
+                PhoneNumber = request.Phone,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                IsLinkedInUser = isLinkedInUser,
+                HasVerifiedLinkedIn = isLinkedInUser,
+                LinkedInId = request.LinkedInId
             };
             var result = await _userManager.CreateAsync(user, request.Password);
 
@@ -47,15 +54,15 @@ namespace AuthService.Services
 
                     var confirmationLink = $"https://auth.findjob.nu/api/auth/confirm-email?userId={Uri.EscapeDataString(user.Id)}&token={Uri.EscapeDataString(token)}";
 
-                    Console.WriteLine("Attempting to send confirmation email...");
+                    _logger.LogInformation("Attempting to send confirmation email...");
                     try
                     {
                         SendEmailAsync(user.Email, "Confirm your email", $"Please confirm your account by clicking this link: <a href=\"{confirmationLink}\">Confirm Email</a>");
-                        Console.WriteLine("Email sent successfully.");
+                        _logger.LogInformation("Email sent successfully.");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Email sending failed: {ex}");
+                        _logger.LogError("Email sending failed: {ErrorMessage}", ex);
                     }
                 });
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
@@ -65,27 +72,34 @@ namespace AuthService.Services
                 return new RegisterResult { Success = true, AuthResponse = authResponse };
             }
 
-            // Compose error message from IdentityResult
             string errorMessage = string.Join(" ", result.Errors.Select(e => e.Description));
-            Console.WriteLine("Registration Errors: " + errorMessage);
+            _logger.LogError("Registration Errors: {errorMessage}", errorMessage);
             return new RegisterResult { Success = false, ErrorMessage = errorMessage };
         }
 
-        public async Task<AuthResponse?> LoginAsync(LoginRequest request)
+        public async Task<LoginResult> LoginAsync(LoginRequest request, bool isLinkedInUser = false)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
-            {
-                return null;
-            }
+                return new LoginResult{ AuthResponse = null, ErrorMessage = "No user exists with the given E-mail.", Success = false};
+
+            if (isLinkedInUser && !user.IsLinkedInUser)
+                return new LoginResult { AuthResponse = null, ErrorMessage = "This user is not a LinkedIn user.", Success = false };
+
+            if (!isLinkedInUser && user.IsLinkedInUser)
+                return new LoginResult { AuthResponse = null, ErrorMessage = "This user is a LinkedIn user.", Success = false };
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: false);
             if (result.Succeeded)
             {
-                return await GenerateAuthResponseAsync(user);
+                var AuthResponse = await GenerateAuthResponseAsync(user);
+                if (AuthResponse == null)
+                    return new LoginResult { AuthResponse = null, ErrorMessage = "Failed to generate authentication response.", Success = false };
+
+                return new LoginResult { AuthResponse = AuthResponse, Success = true };
             }
 
-            return null;
+            return new LoginResult { AuthResponse = null, ErrorMessage = "Invalid credentials.", Success = false };
         }
 
         public async Task<AuthResponse?> RefreshTokenAsync(TokenRefreshRequest request)
@@ -215,6 +229,8 @@ namespace AuthService.Services
             {
                 UserId = user.Id,
                 Email = user.Email!,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
                 AccessToken = accessToken,
                 RefreshToken = refreshTokenValue,
                 AccessTokenExpiration = expires
@@ -268,7 +284,7 @@ namespace AuthService.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Token validation error: {ex.Message}");
+                _logger.LogError("Token validation error: {exception}", ex);
                 return null;
             }
         }
@@ -309,6 +325,16 @@ namespace AuthService.Services
             };
 
             await client.SendMailAsync(mailMessage);
+        }
+
+        public async Task<bool> IsLinkedInUserOrHasVerifiedTheirLinkedIn(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return false;
+            }
+            return user.HasVerifiedLinkedIn;
         }
     }
 }

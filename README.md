@@ -2,8 +2,8 @@
 
 This solution consists of three main projects:
 
-- **findjobnuAPI**: ASP.NET Core Web API for managing and searching job postings, user profiles, and saved jobs.
-- **AuthService**: Authentication and authorization service using ASP.NET Core Identity, JWT, refresh tokens, and email confirmation.
+- **findjobnuAPI**: ASP.NET Core Web API for managing and searching job postings, user profiles, saved jobs, and LinkedIn profile import.
+- **AuthService**: Authentication and authorization service using ASP.NET Core Identity, JWT, refresh tokens, email confirmation, and LinkedIn OAuth login/account linking.
 - **FindJobNuTesting**: Unit test project for API and service logic, using xUnit and Moq.
 
 ---
@@ -16,6 +16,7 @@ A minimal ASP.NET Core Web API for managing and searching job postings and user 
 
 - RESTful endpoints for job postings (list, search, get by ID)
 - User profile management and saved jobs
+- LinkedIn profile import via Python script (see LinkedIn endpoints below)
 - Pagination and filtering support
 - Entity Framework Core with SQL Server
 - OpenAPI/Swagger documentation
@@ -35,6 +36,8 @@ A minimal ASP.NET Core Web API for managing and searching job postings and user 
 - `POST /api/userprofile/{userId}/savedjobs/{jobId}` – Save a job for a user
 - `DELETE /api/userprofile/{userId}/savedjobs/{jobId}` – Remove a saved job for a user
 - `GET /api/cities` – List all cities
+- **LinkedIn Profile Import:**
+  - `POST /api/linkedin/import` – Import LinkedIn profile data for a user (requires LinkedIn credentials and user ID)
 
 ## Project Structure
 
@@ -42,7 +45,7 @@ A minimal ASP.NET Core Web API for managing and searching job postings and user 
 - `Endpoints/` – API endpoint definitions
 - `Models/` – Data models (JobIndexPosts, UserProfile, etc.)
 - `Repositories/Context/FindjobnuContext.cs` – EF Core DB context
-- `Services/` – Business logic and data access
+- `Services/` – Business logic and data access (includes LinkedInProfileService)
 
 ---
 
@@ -53,6 +56,7 @@ Handles authentication and authorization for the solution.
 ## Features
 
 - User registration and login (with email/password)
+- LinkedIn OAuth login and account linking
 - JWT access token and refresh token issuance
 - Email confirmation for new users
 - Token refresh and revocation endpoints
@@ -66,6 +70,9 @@ Handles authentication and authorization for the solution.
 - `POST /api/auth/refresh-token` – Refresh JWT using a valid refresh token
 - `POST /api/auth/revoke-token` – Revoke a refresh token
 - `GET /api/auth/confirm-email` – Confirm user email
+- **LinkedIn OAuth:**
+  - `GET /api/auth/linkedin/login` – Redirect to LinkedIn OAuth login
+  - `GET /api/auth/linkedin/callback` – LinkedIn OAuth callback for login/account linking
 
 ---
 
@@ -95,6 +102,7 @@ dotnet test FindJobNuTesting
 
 - Update `findjobnuAPI/appsettings.json` and `AuthService/appsettings.json` with your connection strings and JWT settings.
 - For AuthService, configure SMTP settings for email confirmation.
+- For LinkedIn features, configure LinkedIn OAuth credentials in `AuthService/appsettings.json` and LinkedIn credentials for profile import in `findjobnuAPI/appsettings.json`.
 
 ## Build and Run
 
