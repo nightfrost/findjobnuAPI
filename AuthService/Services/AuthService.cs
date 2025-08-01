@@ -327,14 +327,20 @@ namespace AuthService.Services
             await client.SendMailAsync(mailMessage);
         }
 
-        public async Task<bool> IsLinkedInUserOrHasVerifiedTheirLinkedIn(string userId)
+        public async Task<Tuple<bool, string?>> IsLinkedInUserOrHasVerifiedTheirLinkedIn(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
-                return false;
+                return new Tuple<bool, string?>(false, null);
             }
-            return user.HasVerifiedLinkedIn;
+
+            if (user.IsLinkedInUser || user.HasVerifiedLinkedIn)
+            {
+                return new Tuple<bool, string?>(true, user.LinkedInId);
+            }
+
+            return new Tuple<bool, string?>(false, null);
         }
     }
 }
