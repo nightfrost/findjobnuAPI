@@ -40,6 +40,8 @@ namespace AuthService.Tests.Services
                 claimsFactoryMock.Object,
                 null, null, null, null);
 
+            var loggerMock = new Mock<Microsoft.Extensions.Logging.ILogger<AuthService.Services.AuthService>>();
+
             configurationMock = new Mock<IConfiguration>();
             configurationMock.Setup(x => x.GetSection("JwtSettings")["SecretKey"])
                 .Returns("THIS_IS_A_VERY_LONG_AND_SECURE_KEY_THAT_SHOULD_BE_AT_LEAST_32_BYTES_FOR_PRODUCTION_ENVIRONMENTS");
@@ -53,7 +55,8 @@ namespace AuthService.Tests.Services
                 userManagerMock.Object,
                 signInManagerMock.Object,
                 configurationMock.Object,
-                dbContext);
+                dbContext,
+                loggerMock.Object);
         }
 
         [Fact]

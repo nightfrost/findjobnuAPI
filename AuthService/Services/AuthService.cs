@@ -18,13 +18,15 @@ namespace AuthService.Services
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _dbContext;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, ApplicationDbContext dbContext)
+        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, ApplicationDbContext dbContext, ILogger<AuthService> logger)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _configuration = configuration;
             _dbContext = dbContext;
+            _logger = logger;
         }
 
         public async Task<RegisterResult> RegisterAsync(RegisterRequest request, bool isLinkedInUser = false)
@@ -52,15 +54,15 @@ namespace AuthService.Services
 
                     var confirmationLink = $"https://auth.findjob.nu/api/auth/confirm-email?userId={Uri.EscapeDataString(user.Id)}&token={Uri.EscapeDataString(token)}";
 
-                    Console.WriteLine("Attempting to send confirmation email...");
+                    _logger.LogInformation("Attempting to send confirmation email...");
                     try
                     {
                         SendEmailAsync(user.Email, "Confirm your email", $"Please confirm your account by clicking this link: <a href=\"{confirmationLink}\">Confirm Email</a>");
-                        Console.WriteLine("Email sent successfully.");
+                        _logger.LogInformation("Email sent successfully.");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Email sending failed: {ex}");
+                        _logger.LogError("Email sending failed: {ErrorMessage}", ex);
                     }
                 });
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
@@ -71,7 +73,7 @@ namespace AuthService.Services
             }
 
             string errorMessage = string.Join(" ", result.Errors.Select(e => e.Description));
-            Console.WriteLine("Registration Errors: " + errorMessage);
+            _logger.LogError("Registration Errors: {errorMessage}", errorMessage);
             return new RegisterResult { Success = false, ErrorMessage = errorMessage };
         }
 
@@ -282,7 +284,7 @@ namespace AuthService.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Token validation error: {ex.Message}");
+                _logger.LogError("Token validation error: {exception}", ex);
                 return null;
             }
         }

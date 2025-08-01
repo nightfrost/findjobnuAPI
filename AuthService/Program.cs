@@ -56,6 +56,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+builder.Services.AddLogging();
 builder.Services.AddScoped<IAuthService, AuthService.Services.AuthService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ILinkedInAuthService, LinkedInAuthService>();

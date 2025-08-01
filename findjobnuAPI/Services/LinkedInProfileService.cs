@@ -18,6 +18,7 @@ namespace findjobnuAPI.Services
         private readonly string _linkedInEmail;
         private readonly string _linkedInPassword;
         private readonly FindjobnuContext _context;
+        private readonly ILogger _logger;
 
         /// <summary>
         /// Initialize the LinkedIn Profile Service
@@ -29,15 +30,16 @@ namespace findjobnuAPI.Services
         public LinkedInProfileService(
             FindjobnuContext context,
             string scriptDirectory,
-            string pythonExecutable = "python",
-            string linkedInEmail = "",
-            string linkedInPassword = "")
+            string linkedInEmail,
+            string linkedInPassword,
+            ILogger logger)
         {
-            _scriptDirectory = scriptDirectory ?? throw new ArgumentNullException(nameof(scriptDirectory));
-            _pythonExecutable = pythonExecutable ?? throw new ArgumentNullException(nameof(pythonExecutable));
+            _scriptDirectory = scriptDirectory;
+            _pythonExecutable = "python";
             _linkedInEmail = linkedInEmail;
             _linkedInPassword = linkedInPassword;
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _context = context;
+            _logger = logger;
 
             if (!Directory.Exists(_scriptDirectory))
             {
@@ -162,7 +164,7 @@ namespace findjobnuAPI.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error saving profile: {ex.Message}");
+                _logger.LogError("Error saving profile. {ExceptionMessage}", ex.Message);
                 return false;
             }
         }
