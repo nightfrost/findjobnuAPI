@@ -119,14 +119,15 @@ namespace AuthService.Endpoints
             authGroup.MapGet("/linkedin-verification/{userId}", async (string userId, IAuthService authService) =>
             {
                 var isLinkedInUser = await authService.IsLinkedInUserOrHasVerifiedTheirLinkedIn(userId);
-                if (isLinkedInUser)
+                if (isLinkedInUser.Item1)
                 {
-                    return Results.Ok(true);
+                    return Results.Ok(isLinkedInUser.Item2);
                 }
-                return Results.Ok(false);
+                return Results.NoContent();
             })
             .WithOpenApi()
             .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status204NoContent)
             .WithName("Verify LinkedIn connection.")
             .WithSummary("Confirms wether a user has verified through LinkedIn.")
             .WithDescription("Confirms the user's LinkedIn verification using the provided userId, then returns true or false.");
