@@ -52,6 +52,24 @@ namespace findjobnuAPI
             builder.Services.AddAuthorization();
             builder.Services.AddScoped<IUserProfileService, UserProfileService>();
             builder.Services.AddScoped<IJobIndexPostsService, JobIndexPostsService>();
+            builder.Services.AddHttpClient();
+            builder.Services.AddScoped<ILinkedInProfileService>(provider =>
+            {
+                var config = provider.GetRequiredService<IConfiguration>();
+                var dbContext = provider.GetRequiredService<FindjobnuContext>();
+                var scraperSection = config.GetSection("LinkedInScraper");
+                var scriptDirectory = scraperSection["LinkedInImporterPath"];
+                var pythonExecutable = "python";
+                var linkedInEmail = scraperSection["Username"];
+                var linkedInPassword = scraperSection["Password"];
+                return new LinkedInProfileService(
+                    dbContext,
+                    scriptDirectory ?? throw new ArgumentNullException(nameof(scriptDirectory)),
+                    pythonExecutable,
+                    linkedInEmail ?? throw new ArgumentNullException(nameof(linkedInEmail)),
+                    linkedInPassword ?? throw new ArgumentNullException(nameof(linkedInPassword))
+                );
+            });
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

@@ -66,5 +66,22 @@ public static class UserProfileEndpoints
         })
         .WithName("DeleteSavedJob")
         .WithOpenApi();
+
+        group.MapGet("/import-linkedin-profile/{linkedInId}", async Task<Results<Ok<bool>, BadRequest<string>, ForbidHttpResult>> (string linkedInId, IUserProfileService upservice, ILinkedInProfileService liprofile, HttpContext httpContext) =>
+        {
+            var authenticatedUserId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (authenticatedUserId == null)
+                return TypedResults.Forbid();
+            
+            var result = await liprofile.GetProfileAsync(linkedInId);
+            if (!result.Success || result.Profile == null)
+                return TypedResults.BadRequest(result.Error);
+
+            return await liprofile.SaveProfileAsync(authenticatedUserId, result.Profile) == true ?
+                TypedResults.Ok(true) : 
+                TypedResults.BadRequest("import failed.");
+        })
+        .WithName("ImportLinkedInProfile")
+        .WithOpenApi();
     }
 }

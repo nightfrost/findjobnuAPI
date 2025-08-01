@@ -30,11 +30,11 @@ namespace AuthService.Endpoints
             authGroup.MapPost("/login", async (LoginRequest request, IAuthService authService) =>
             {
                 var authResponse = await authService.LoginAsync(request);
-                if (authResponse == null)
+                if (!authResponse.Success)
                 {
-                    return Results.Unauthorized(); 
+                    return Results.BadRequest(new { message = authResponse.ErrorMessage ?? "Login failed." });
                 }
-                return Results.Ok(authResponse);
+                return Results.Ok(authResponse.AuthResponse);
             })
             .WithOpenApi()
             .Produces<AuthResponse>(StatusCodes.Status200OK)
@@ -115,6 +115,21 @@ namespace AuthService.Endpoints
             .WithName("ConfirmEmail")
             .WithSummary("Confirms a user's email address.")
             .WithDescription("Confirms the user's email using the provided userId and token, then redirects to https://findjob.nu on success.");
+
+            authGroup.MapGet("/linkedin-verification/{userId}", async (string userId, IAuthService authService) =>
+            {
+                var isLinkedInUser = await authService.IsLinkedInUserOrHasVerifiedTheirLinkedIn(userId);
+                if (isLinkedInUser)
+                {
+                    return Results.Ok(true);
+                }
+                return Results.Ok(false);
+            })
+            .WithOpenApi()
+            .Produces(StatusCodes.Status200OK)
+            .WithName("Verify LinkedIn connection.")
+            .WithSummary("Confirms wether a user has verified through LinkedIn.")
+            .WithDescription("Confirms the user's LinkedIn verification using the provided userId, then returns true or false.");
         }
     }
 }

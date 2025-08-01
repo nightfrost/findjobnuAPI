@@ -118,7 +118,7 @@ namespace AuthService.Tests.Services
             var response = await service.LoginAsync(request);
 
             Assert.NotNull(response);
-            Assert.Equal(request.Email, response.Email);
+            Assert.Equal(request.Email, response.AuthResponse?.Email);
         }
 
         [Fact]
@@ -132,7 +132,7 @@ namespace AuthService.Tests.Services
 
             var response = await service.LoginAsync(request);
 
-            Assert.Null(response);
+            Assert.Equal("No user exists with the given E-mail.", response.ErrorMessage);
         }
 
         [Fact]
