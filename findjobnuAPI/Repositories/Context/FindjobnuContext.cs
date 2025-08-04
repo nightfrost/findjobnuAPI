@@ -42,10 +42,10 @@ namespace findjobnuAPI.Repositories.Context
                 .HasIndex(up => up.UserId)
                 .IsUnique();
 
-            // Use Newtonsoft.Json serialization and value comparer for Keywords
+            // Use comma-separated serialization and value comparer for Keywords
             var keywordsConverter = new ValueConverter<List<string>, string>(
-                v => v == null ? null : JsonConvert.SerializeObject(v),
-                v => string.IsNullOrEmpty(v) ? new List<string>() : JsonConvert.DeserializeObject<List<string>>(v)
+                v => v == null ? null : string.Join(",", v),
+                v => string.IsNullOrWhiteSpace(v) ? new List<string>() : v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList()
             );
             var keywordsComparer = new ValueComparer<List<string>>(
                 (c1, c2) => (c1 == null && c2 == null) || (c1 != null && c2 != null && c1.SequenceEqual(c2)),
