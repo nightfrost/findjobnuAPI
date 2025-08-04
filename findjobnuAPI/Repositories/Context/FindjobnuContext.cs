@@ -1,5 +1,9 @@
 ﻿using findjobnuAPI.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Newtonsoft.Json;
+
 
 namespace findjobnuAPI.Repositories.Context
 {
@@ -37,18 +41,26 @@ namespace findjobnuAPI.Repositories.Context
             modelBuilder.Entity<UserProfile>()
                 .HasIndex(up => up.UserId)
                 .IsUnique();
+
+            // Use Newtonsoft.Json serialization and value comparer for Keywords
+            var keywordsConverter = new ValueConverter<List<string>, string>(
+                v => v == null ? null : JsonConvert.SerializeObject(v),
+                v => string.IsNullOrEmpty(v) ? new List<string>() : JsonConvert.DeserializeObject<List<string>>(v)
+            );
+            var keywordsComparer = new ValueComparer<List<string>>(
+                (c1, c2) => (c1 == null && c2 == null) || (c1 != null && c2 != null && c1.SequenceEqual(c2)),
+                c => c == null ? 0 : c.Aggregate(0, (a, v) => HashCode.Combine(a, v != null ? v.GetHashCode() : 0)),
+                c => c == null ? null : c.ToList()
+            );
+
             modelBuilder.Entity<UserProfile>()
                 .Property(up => up.Keywords)
-                .HasConversion(
-                    v => string.Join(",", v ?? new List<string>()),
-                    v => v.Split(',', System.StringSplitOptions.RemoveEmptyEntries).ToList()
-                );
+                .HasConversion(keywordsConverter)
+                .Metadata.SetValueComparer(keywordsComparer);
             modelBuilder.Entity<JobIndexPosts>()
                 .Property(j => j.Keywords)
-                .HasConversion(
-                    v => string.Join(",", v ?? new List<string>()),
-                    v => v.Split(',', System.StringSplitOptions.RemoveEmptyEntries).ToList()
-                );
+                .HasConversion(keywordsConverter)
+                .Metadata.SetValueComparer(keywordsComparer);
 
             // LinkedInProfile relationships
             modelBuilder.Entity<LinkedInProfile>()
