@@ -88,7 +88,7 @@ namespace AuthService.Services
                 return Results.BadRequest("Failed to fetch LinkedIn user info");
 
             var profileResponse = await http.GetAsync(LINKEDIN_PROFILE_URL);
-            if (!userInfoResponse.IsSuccessStatusCode)
+            if (!profileResponse.IsSuccessStatusCode)
                 return Results.BadRequest("Failed to fetch LinkedIn profile");
 
             var userInfoJson = await userInfoResponse.Content.ReadAsStringAsync();
