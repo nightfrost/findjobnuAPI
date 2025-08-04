@@ -118,7 +118,7 @@ namespace AuthService.Services
                 {
                     user.HasVerifiedLinkedIn = true;
                     user.LinkedInId = id;
-                    user.LinkedInProfileUrl = string.Concat(LINKEDIN_VANITY_BASE_URL + vanityUrl) ?? string.Empty;
+                    user.LinkedInProfileUrl = !string.IsNullOrEmpty(vanityUrl) ? LINKEDIN_VANITY_BASE_URL + vanityUrl : string.Empty;
                     user.LinkedInHeadline = headline ?? string.Empty;
                     user.EmailConfirmed = true;
                     user.LastLinkedInSync = DateTime.UtcNow;
