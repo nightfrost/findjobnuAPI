@@ -61,7 +61,7 @@ namespace AuthService.Services
             var redirectUri = _config["LinkedInOAuth:RedirectUri"] ?? throw new InvalidConfigurationException("Missing LinkedInOAuth:RedirectUri configuration.");
             var findjobnuUri = _config["LinkedInOAuth:FindJobNuFrontendUrl"] ?? throw new InvalidConfigurationException("Missing LinkedInOAuth:FindJobNuUri configuration.");
 
-            if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret) || string.IsNullOrEmpty(redirectUri))
+            if (clientId == "" || clientSecret == "" || redirectUri == "")
                 return Results.BadRequest("LinkedIn OAuth configuration is missing. Cannot Proceed.");
 
             var http = _httpClientFactory.CreateClient();
@@ -145,7 +145,7 @@ namespace AuthService.Services
                     FirstName = firstName,
                     LastName = lastName,
                     LinkedInId = id,
-                    LinkedInProfileUrl = string.Concat(LINKEDIN_VANITY_BASE_URL + vanityUrl) ?? string.Empty,
+                    LinkedInProfileUrl = LINKEDIN_VANITY_BASE_URL + vanityUrl ?? string.Empty,
                     LinkedInHeadline = headline ?? string.Empty,
                     IsLinkedInUser = true,
                     HasVerifiedLinkedIn = true,
