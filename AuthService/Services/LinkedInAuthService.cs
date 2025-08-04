@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using AuthService.Entities;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.IdentityModel.Protocols.Configuration;
 
 namespace AuthService.Services
 {
@@ -19,10 +20,12 @@ namespace AuthService.Services
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
-        private const string LINKEDIN_SCOPE = "openid profile email";
+        private const string LINKEDIN_SCOPE = "openid email profile r_basicprofile";
         private const string LINKEDIN_AUTH_URL = "https://www.linkedin.com/oauth/v2/authorization";
         private const string LINKEDIN_TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken";
         private const string LINKEDIN_USERINFO_URL = "https://api.linkedin.com/v2/userinfo";
+        private const string LINKEDIN_PROFILE_URL = "https://api.linkedin.com/v2/me";
+        private const string LINKEDIN_VANITY_BASE_URL = "https://www.linkedin.com/in/";
 
         public LinkedInAuthService(IConfiguration config, IAuthService authService, IHttpClientFactory httpClientFactory, SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager)
         {
@@ -53,9 +56,10 @@ namespace AuthService.Services
             if (string.IsNullOrEmpty(code))
                 return Results.BadRequest("Missing code from LinkedIn. Cannot Proceed.");
 
-            var clientId = _config["LinkedInOAuth:ClientId"];
-            var clientSecret = _config["LinkedInOAuth:ClientSecret"];
-            var redirectUri = _config["LinkedInOAuth:RedirectUri"];
+            var clientId = _config["LinkedInOAuth:ClientId"] ?? throw new InvalidConfigurationException("Missing LinkedInOAuth:ClientId configuration.");
+            var clientSecret = _config["LinkedInOAuth:ClientSecret"] ?? throw new InvalidConfigurationException("Missing LinkedInOAuth:ClientSecret configuration.");
+            var redirectUri = _config["LinkedInOAuth:RedirectUri"] ?? throw new InvalidConfigurationException("Missing LinkedInOAuth:RedirectUri configuration.");
+            var findjobnuUri = _config["LinkedInOAuth:FindJobNuFrontendUrl"] ?? throw new InvalidConfigurationException("Missing LinkedInOAuth:FindJobNuUri configuration.");
 
             if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret) || string.IsNullOrEmpty(redirectUri))
                 return Results.BadRequest("LinkedIn OAuth configuration is missing. Cannot Proceed.");
@@ -67,9 +71,9 @@ namespace AuthService.Services
                 {
                     { "grant_type", "authorization_code" },
                     { "code", code },
-                    { "redirect_uri", redirectUri ?? throw new ArgumentNullException(nameof(redirectUri)) },
-                    { "client_id", clientId ?? throw new ArgumentNullException(nameof(clientId)) },
-                    { "client_secret", clientSecret ?? throw new ArgumentNullException(nameof(clientSecret)) }
+                    { "redirect_uri", redirectUri },
+                    { "client_id", clientId },
+                    { "client_secret", clientSecret }
                 }));
             if (!tokenResponse.IsSuccessStatusCode)
                 return Results.BadRequest("Failed to get access token");
@@ -83,12 +87,20 @@ namespace AuthService.Services
             if (!userInfoResponse.IsSuccessStatusCode)
                 return Results.BadRequest("Failed to fetch LinkedIn user info");
 
+            var profileResponse = await http.GetAsync(LINKEDIN_PROFILE_URL);
+            if (!userInfoResponse.IsSuccessStatusCode)
+                return Results.BadRequest("Failed to fetch LinkedIn profile");
+
             var userInfoJson = await userInfoResponse.Content.ReadAsStringAsync();
+            var profileJson = await profileResponse.Content.ReadAsStringAsync();
             using var userInfoDoc = JsonDocument.Parse(userInfoJson);
+            using var profileDoc = JsonDocument.Parse(profileJson);
             var email = userInfoDoc.RootElement.TryGetProperty("email", out var emailProp) ? emailProp.GetString() : null;
             var firstName = userInfoDoc.RootElement.TryGetProperty("given_name", out var firstNameProp) ? firstNameProp.GetString() : null;
             var lastName = userInfoDoc.RootElement.TryGetProperty("family_name", out var lastNameProp) ? lastNameProp.GetString() : null;
             var id = userInfoDoc.RootElement.TryGetProperty("sub", out var idProp) ? idProp.GetString() : null;
+            var vanityUrl = profileDoc.RootElement.TryGetProperty("vanityName", out var vanityProp) ? vanityProp.GetString() : null;
+            var headline = profileDoc.RootElement.TryGetProperty("localizedHeadline", out var headlineProp) ? headlineProp.GetString() : null;
 
             if (string.IsNullOrEmpty(email))
                 return Results.BadRequest("Email not found in LinkedIn user info. Cannot create account.");
@@ -106,6 +118,10 @@ namespace AuthService.Services
                 {
                     user.HasVerifiedLinkedIn = true;
                     user.LinkedInId = id;
+                    user.LinkedInProfileUrl = string.Concat(LINKEDIN_VANITY_BASE_URL + vanityUrl) ?? string.Empty;
+                    user.LinkedInHeadline = headline ?? string.Empty;
+                    user.EmailConfirmed = true;
+                    user.LastLinkedInSync = DateTime.UtcNow;
                     await _userManager.UpdateAsync(user);
                     return Results.Ok("Account has been linked");
                 }
@@ -114,22 +130,45 @@ namespace AuthService.Services
                 if (signInResult.Succeeded)
                 {
                     var authResponse = await _authService.LoginAsync(new LoginRequest { Email = email, Password = linkedInPassword }, isLinkedInUser: true);
-                    return Results.Ok(authResponse);
+                    if (authResponse == null || authResponse.AuthResponse == null || !authResponse.Success)
+                        return Results.BadRequest("Failed to create auth response for existing LinkedIn user.");
+                    authResponse.AuthResponse.FindJobNuUri = findjobnuUri;
+                    return RedirectIfSuccess(authResponse);
                 }
                 return Results.BadRequest("Failed to sign in existing user using LinkedIn values.");
             } else
             {
-                var result = await _authService.RegisterAsync(new RegisterRequest
+                var applicationUser = new ApplicationUser
                 {
+                    UserName = email,
                     Email = email,
-                    Password = linkedInPassword,
                     FirstName = firstName,
                     LastName = lastName,
-                    LinkedInId = id
-                }, isLinkedInUser: true);
-                if (!result.Success)
-                    return Results.BadRequest(result.ErrorMessage);
-                return Results.Ok(result.AuthResponse);
+                    LinkedInId = id,
+                    LinkedInProfileUrl = string.Concat(LINKEDIN_VANITY_BASE_URL + vanityUrl) ?? string.Empty,
+                    LinkedInHeadline = headline ?? string.Empty,
+                    IsLinkedInUser = true,
+                    HasVerifiedLinkedIn = true,
+                    EmailConfirmed = true,
+                    LastLinkedInSync = DateTime.UtcNow
+                };
+                var registerResult = await _userManager.CreateAsync(applicationUser, linkedInPassword);
+
+                if (registerResult.Succeeded)
+                {
+                    var signInResult = await _signInManager.CheckPasswordSignInAsync(applicationUser, linkedInPassword, lockoutOnFailure: false);
+                    if (signInResult.Succeeded)
+                    {
+                        var authResponse = await _authService.LoginAsync(new LoginRequest { Email = email, Password = linkedInPassword }, isLinkedInUser: true);
+                        if (authResponse == null || authResponse.AuthResponse == null  || !authResponse.Success)
+                            return Results.BadRequest("Failed to create auth response for new LinkedIn user.");
+                        authResponse.AuthResponse.FindJobNuUri = findjobnuUri;
+                        return RedirectIfSuccess(authResponse);
+                    }
+                    return Results.BadRequest("Failed to sign in new user using LinkedIn values.");
+                }
+
+                return Results.BadRequest("Something went wrong.");
             }
         }
 
@@ -143,6 +182,30 @@ namespace AuthService.Services
             var state = Guid.NewGuid().ToString();
             var authUrl = $"{LINKEDIN_AUTH_URL}?response_type=code&client_id={clientId}&redirect_uri={Uri.EscapeDataString(redirectUri ?? throw new ArgumentNullException(nameof(redirectUri)))}&state={state}&scope={Uri.EscapeDataString(LINKEDIN_SCOPE)}";
             return authUrl;
+        }
+
+        private IResult RedirectIfSuccess(LoginResult loginResult)
+        {
+            if (loginResult.Success && loginResult.AuthResponse != null)
+            {
+                var findjobnuUri = _config["LinkedInOAuth:FindJobNuFrontendUrl"] ?? throw new InvalidConfigurationException("Missing LinkedInOAuth:FindJobNuUri configuration.");
+                var query = findjobnuUri + $"?userId={Uri.EscapeDataString(loginResult.AuthResponse.UserId)}" +
+                            $"&email={Uri.EscapeDataString(loginResult.AuthResponse.Email)}" +
+                            $"&firstName={Uri.EscapeDataString(loginResult.AuthResponse.FirstName)}" +
+                            $"&lastName={Uri.EscapeDataString(loginResult.AuthResponse.LastName)}" +
+                            $"&accessToken={Uri.EscapeDataString(loginResult.AuthResponse.AccessToken)}" +
+                            $"&refreshToken={Uri.EscapeDataString(loginResult.AuthResponse.RefreshToken)}" +
+                            $"&accessTokenExpiration={Uri.EscapeDataString(loginResult.AuthResponse.AccessTokenExpiration.ToString("o"))}" +
+                            $"&isLinkedInUser={Uri.EscapeDataString(loginResult.AuthResponse.LinkedInId ?? "")}";
+                return Results.Redirect($"{query}");
+            }
+            else if (loginResult.ErrorMessage != null)
+            {
+                return Results.BadRequest(loginResult.ErrorMessage);
+            }
+
+            return Results.BadRequest("Login failed for an unknown reason.");
+            
         }
     }
 }

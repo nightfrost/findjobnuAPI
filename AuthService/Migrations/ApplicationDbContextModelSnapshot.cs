@@ -54,11 +54,20 @@ namespace AuthService.Migrations
                     b.Property<bool>("IsLinkedInUser")
                         .HasColumnType("bit");
 
+                    b.Property<DateTime?>("LastLinkedInSync")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("LinkedInHeadline")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("LinkedInId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LinkedInProfileUrl")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("LockoutEnabled")

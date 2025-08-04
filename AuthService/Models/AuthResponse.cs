@@ -9,5 +9,7 @@
         public string AccessToken { get; set; } = string.Empty;
         public string RefreshToken { get; set; } = string.Empty;
         public DateTime AccessTokenExpiration { get; set; }
+        public string? LinkedInId { get; set; }
+        public string? FindJobNuUri { get; set; }
     }
 }
