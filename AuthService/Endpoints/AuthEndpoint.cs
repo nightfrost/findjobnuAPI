@@ -130,6 +130,23 @@ namespace AuthService.Endpoints
             .Produces(StatusCodes.Status204NoContent)
             .WithName("Verify LinkedIn connection.")
             .WithSummary("Confirms wether a user has verified through LinkedIn.")
+            .WithDescription("Confirms the user's LinkedIn verification using the provided userId, then returns true or false.");
+
+            authGroup.MapGet("/user-info", async (HttpContext context, IAuthService authService) =>
+            {
+                var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new UnauthorizedAccessException("User ID not found in claims.");
+                var userInfo = await authService.GetUserInformationAsync(userId);
+                if (!userInfo.Success)
+                    return Results.NotFound(userInfo);
+                return Results.Ok(userInfo);
+            })
+            .RequireAuthorization()
+            .WithOpenApi()
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound)
+            .WithName("GetUserInformation")
+            .WithSummary("Gets the user information for the current context user.")
             .WithDescription("Checks if the user has verified their LinkedIn account using the provided userId. Returns the LinkedInId on success, or NoContent if the user is not verified or not a LinkedIn user.");
         }
     }

@@ -233,7 +233,8 @@ namespace AuthService.Services
                 LastName = user.LastName,
                 AccessToken = accessToken,
                 RefreshToken = refreshTokenValue,
-                AccessTokenExpiration = expires
+                AccessTokenExpiration = expires,
+                LinkedInId = user.LinkedInId,
             };
         }
 
@@ -341,6 +342,45 @@ namespace AuthService.Services
             }
 
             return new Tuple<bool, string?>(false, null);
+        }
+
+        public async Task<UserInformationResult> GetUserInformationAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return new UserInformationResult
+                {
+                    Success = false,
+                    ErrorMessage = "User not found."
+                };
+            }
+
+            return new UserInformationResult
+            {
+                Success = true,
+                UserInformation = MapToUserInformationDTO(user)
+            };
+        }
+
+        private UserInformationDTO MapToUserInformationDTO(ApplicationUser user)
+        {
+            return new UserInformationDTO
+            {
+                Id = user.Id,
+                Email = user.Email!,
+                UserName = user.UserName ?? "",
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Phone = user.PhoneNumber,
+                IsLinkedInUser = user.IsLinkedInUser,
+                HasVerifiedLinkedIn = user.HasVerifiedLinkedIn,
+                LinkedInId = user.LinkedInId ?? "",
+                LinkedInProfileUrl = user.LinkedInProfileUrl,
+                LinkedInHeadline = user.LinkedInHeadline,
+                LastLinkedInSync = user.LastLinkedInSync,
+                CreatedAt = user.CreatedAt
+            };
         }
     }
 }

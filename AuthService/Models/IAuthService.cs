@@ -8,5 +8,6 @@
         Task<bool> RevokeRefreshTokenAsync(string userId, string refreshToken);
         Task<bool> ConfirmEmailAsync(string userId, string token);
         Task<Tuple<bool, string?>> IsLinkedInUserOrHasVerifiedTheirLinkedIn(string userId);
+        Task<UserInformationResult> GetUserInformationAsync(string userId);
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.OpenApi;
 using findjobnuAPI.Models;
 using findjobnuAPI.Services;
 using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
 
 namespace findjobnuAPI.Endpoints;
 
@@ -72,7 +73,9 @@ public static class UserProfileEndpoints
             var authenticatedUserId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (authenticatedUserId == null)
                 return TypedResults.Forbid();
-            
+            if (linkedInId == null || linkedInId.IsNullOrEmpty())
+                return TypedResults.BadRequest("LinkedIn ID is required.");
+
             var result = await liprofile.GetProfileAsync(linkedInId);
             if (!result.Success || result.Profile == null)
                 return TypedResults.BadRequest(result.Error);

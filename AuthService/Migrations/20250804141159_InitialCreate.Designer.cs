@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AuthService.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250731130456_InitialIdentityCreate")]
-    partial class InitialIdentityCreate
+    [Migration("20250804141159_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -57,11 +57,20 @@ namespace AuthService.Migrations
                     b.Property<bool>("IsLinkedInUser")
                         .HasColumnType("bit");
 
+                    b.Property<DateTime?>("LastLinkedInSync")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("LinkedInHeadline")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("LinkedInId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LinkedInProfileUrl")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("LockoutEnabled")
