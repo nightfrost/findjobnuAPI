@@ -21,6 +21,7 @@ namespace findjobnuAPI.Services
 
             var totalCount = await _db.JobIndexPosts.CountAsync();
             var items = await _db.JobIndexPosts
+                .Include(j => j.Categories)
                 .OrderBy(j => j.JobID)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -33,18 +34,18 @@ namespace findjobnuAPI.Services
         public async Task<PagedList<JobIndexPosts>?> SearchAsync(string? searchTerm, string? location, string? category, DateTime? postedAfter, DateTime? postedBefore, int page)
         {
             var pageSize = 20;
-            var query = _db.JobIndexPosts.AsQueryable();
+            var query = _db.JobIndexPosts.Include(j => j.Categories).AsQueryable();
 
             if (!string.IsNullOrEmpty(location))
                 query = query.Where(j => j.JobLocation != null && j.JobLocation.Contains(location));
             if (!string.IsNullOrEmpty(category))
-                query = query.Where(j => j.Category != null && j.Category.Contains(category));
+                query = query.Where(j => j.Categories.Any(c => c.Name.Contains(category)));
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 query = query.Where(j =>
                     (j.JobTitle != null && j.JobTitle.Contains(searchTerm)) ||
                     (j.JobLocation != null && j.JobLocation.Contains(searchTerm)) ||
-                    (j.Category != null && j.Category.Contains(searchTerm)) ||
+                    (j.Categories.Any(c => c.Name.Contains(searchTerm))) ||
                     (j.JobDescription != null && j.JobDescription.Contains(searchTerm))
                 );
             }
@@ -69,15 +70,15 @@ namespace findjobnuAPI.Services
         public async Task<JobIndexPosts?> GetByIdAsync(int id)
         {
             return await _db.JobIndexPosts.AsNoTracking()
+                .Include(j => j.Categories)
                 .FirstOrDefaultAsync(model => model.JobID == id);
         }
 
         public async Task<List<string>> GetCategoriesAsync()
         {
-            return await _db.JobIndexPosts
-                .Where(j => !string.IsNullOrEmpty(j.Category))
+            return await _db.Categories
                 .AsNoTracking()
-                .Select(j => j.Category!)
+                .Select(c => c.Name)
                 .Distinct()
                 .OrderBy(c => c)
                 .ToListAsync();
@@ -102,6 +103,7 @@ namespace findjobnuAPI.Services
                 .ToList();
 
             var query = _db.JobIndexPosts
+                .Include(j => j.Categories)
                 .Where(j => jobIds.Contains(j.JobID))
                 .Skip((page - 1) * pagesize)
                 .Take(pagesize)

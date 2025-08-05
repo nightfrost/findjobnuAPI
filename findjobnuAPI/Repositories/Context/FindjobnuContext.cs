@@ -10,6 +10,7 @@ namespace findjobnuAPI.Repositories.Context
     public class FindjobnuContext(DbContextOptions<FindjobnuContext> options) : DbContext(options)
     {
         public DbSet<JobIndexPosts> JobIndexPosts { get; set; }
+        public DbSet<Category> Categories { get; set; }
         public DbSet<Cities> Companies { get; set; }
         public DbSet<UserProfile> UserProfile { get; set; }
         public DbSet<LinkedInProfile> LinkedInProfiles { get; set; }
@@ -61,6 +62,21 @@ namespace findjobnuAPI.Repositories.Context
                 .Property(j => j.Keywords)
                 .HasConversion(keywordsConverter)
                 .Metadata.SetValueComparer(keywordsComparer);
+
+            // Many-to-many: JobIndexPosts <-> Category
+            modelBuilder.Entity<JobIndexPosts>()
+                .HasMany(j => j.Categories)
+                .WithMany(c => c.JobIndexPosts)
+                .UsingEntity<Dictionary<string, object>>(
+                    "JobCategories",
+                    j => j.HasOne<Category>().WithMany().HasForeignKey("CategoryID").HasPrincipalKey("CategoryID").OnDelete(DeleteBehavior.Cascade),
+                    c => c.HasOne<JobIndexPosts>().WithMany().HasForeignKey("JobID").HasPrincipalKey("JobID").OnDelete(DeleteBehavior.Cascade),
+                    je =>
+                    {
+                        je.HasKey("JobID", "CategoryID");
+                        je.ToTable("JobCategories");
+                    }
+                );
 
             // LinkedInProfile relationships
             modelBuilder.Entity<LinkedInProfile>()
