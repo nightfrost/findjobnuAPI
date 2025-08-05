@@ -19,9 +19,12 @@ namespace findjobnuAPI.Tests.Services
                 .Options;
             var context = new FindjobnuContext(options);
 
+            var itCategory = new Category { Name = "IT" };
+            var designCategory = new Category { Name = "Design" };
+            context.Categories.AddRange(itCategory, designCategory);
             context.JobIndexPosts.AddRange(
-                new JobIndexPosts { JobID = 1, JobTitle = "Developer", JobLocation = "NY", Category = "IT", Published = DateTime.UtcNow.AddDays(-1) },
-                new JobIndexPosts { JobID = 2, JobTitle = "Designer", JobLocation = "LA", Category = "Design", Published = DateTime.UtcNow.AddDays(-2) }
+                new JobIndexPosts { JobID = 1, JobTitle = "Developer", JobLocation = "NY", Categories = new List<Category> { itCategory }, Published = DateTime.UtcNow.AddDays(-1) },
+                new JobIndexPosts { JobID = 2, JobTitle = "Designer", JobLocation = "LA", Categories = new List<Category> { designCategory }, Published = DateTime.UtcNow.AddDays(-2) }
             );
             context.SaveChanges();
             return context;
@@ -85,9 +88,12 @@ namespace findjobnuAPI.Tests.Services
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
             using var context = new FindjobnuContext(options);
+            // Add categories
+            var itCategory = new Category { Name = "IT" };
+            context.Categories.Add(itCategory);
             // Add jobs
-            var job1 = new JobIndexPosts { JobID = 10, JobTitle = "Dev", Category = "IT", JobLocation = "NY", Published = DateTime.UtcNow };
-            var job2 = new JobIndexPosts { JobID = 20, JobTitle = "QA", Category = "IT", JobLocation = "NY", Published = DateTime.UtcNow };
+            var job1 = new JobIndexPosts { JobID = 10, JobTitle = "Dev", Categories = new List<Category> { itCategory }, JobLocation = "NY", Published = DateTime.UtcNow };
+            var job2 = new JobIndexPosts { JobID = 20, JobTitle = "QA", Categories = new List<Category> { itCategory }, JobLocation = "NY", Published = DateTime.UtcNow };
             context.JobIndexPosts.AddRange(job1, job2);
             // Add user with saved jobs
             var user = new UserProfile { Id = 1, UserId = "userX", FirstName = "Test", LastName = "User", SavedJobPosts = new List<string> { "10", "20" } };

@@ -1,5 +1,4 @@
 ﻿using findjobnuAPI.Models;
-using findjobnuAPI.Repositories.Context;
 
 namespace findjobnuAPI.Services
 {
