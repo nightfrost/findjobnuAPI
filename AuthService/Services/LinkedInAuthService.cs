@@ -65,6 +65,41 @@ namespace AuthService.Services
                 return Results.BadRequest("LinkedIn OAuth configuration is missing. Cannot Proceed.");
 
             var http = _httpClientFactory.CreateClient();
+            var accessToken = await GetLinkedInTokensAsync(http, code, clientId, clientSecret, redirectUri);
+            if (accessToken == null)
+                return Results.BadRequest("Failed to get access token");
+
+            var (userInfoDoc, profileDoc) = await GetLinkedInUserInfoAsync(http, accessToken);
+            if (userInfoDoc == null || profileDoc == null)
+                return Results.BadRequest("Failed to fetch LinkedIn user info or profile");
+
+            using (userInfoDoc)
+            using (profileDoc)
+            {
+                var (email, firstName, lastName, id, vanityUrl, headline) = ParseLinkedInUserInfo(userInfoDoc, profileDoc);
+
+                if (string.IsNullOrEmpty(email))
+                    return Results.BadRequest("Email not found in LinkedIn user info. Cannot create account.");
+                if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName))
+                    return Results.BadRequest("First name or last name not found in LinkedIn user info. Cannot create account.");
+                if (string.IsNullOrEmpty(id))
+                    return Results.BadRequest("LinkedIn ID not found in user info. Cannot create account.");
+
+                var linkedInPassword = GenerateLinkedInPassword(id);
+                var user = await _userManager.FindByEmailAsync(email);
+                if (user != null)
+                {
+                    return await HandleExistingUserAsync(user, id, vanityUrl, headline, linkedInPassword, email, findjobnuUri);
+                }
+                else
+                {
+                    return await HandleNewUserAsync(email, firstName, lastName, id, vanityUrl, headline, linkedInPassword, findjobnuUri);
+                }
+            }
+        }
+
+        private async Task<string?> GetLinkedInTokensAsync(HttpClient http, string code, string clientId, string clientSecret, string redirectUri)
+        {
             var tokenResponse = await http.PostAsync(
                 LINKEDIN_TOKEN_URL,
                 new FormUrlEncodedContent(new Dictionary<string, string>
@@ -76,100 +111,98 @@ namespace AuthService.Services
                     { "client_secret", clientSecret }
                 }));
             if (!tokenResponse.IsSuccessStatusCode)
-                return Results.BadRequest("Failed to get access token");
-
+                return null;
             var tokenJson = await tokenResponse.Content.ReadAsStringAsync();
             using var tokenDoc = JsonDocument.Parse(tokenJson);
-            var accessToken = tokenDoc.RootElement.GetProperty("access_token").GetString();
+            return tokenDoc.RootElement.GetProperty("access_token").GetString();
+        }
 
+        private async Task<(JsonDocument? userInfoDoc, JsonDocument? profileDoc)> GetLinkedInUserInfoAsync(HttpClient http, string accessToken)
+        {
             http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             var userInfoResponse = await http.GetAsync(LINKEDIN_USERINFO_URL);
             if (!userInfoResponse.IsSuccessStatusCode)
-                return Results.BadRequest("Failed to fetch LinkedIn user info");
-
+                return (null, null);
             var profileResponse = await http.GetAsync(LINKEDIN_PROFILE_URL);
             if (!profileResponse.IsSuccessStatusCode)
-                return Results.BadRequest("Failed to fetch LinkedIn profile");
-
+                return (null, null);
             var userInfoJson = await userInfoResponse.Content.ReadAsStringAsync();
             var profileJson = await profileResponse.Content.ReadAsStringAsync();
-            using var userInfoDoc = JsonDocument.Parse(userInfoJson);
-            using var profileDoc = JsonDocument.Parse(profileJson);
+            var userInfoDoc = JsonDocument.Parse(userInfoJson);
+            var profileDoc = JsonDocument.Parse(profileJson);
+            return (userInfoDoc, profileDoc);
+        }
+
+        private (string? email, string? firstName, string? lastName, string? id, string? vanityUrl, string? headline) ParseLinkedInUserInfo(JsonDocument userInfoDoc, JsonDocument profileDoc)
+        {
             var email = userInfoDoc.RootElement.TryGetProperty("email", out var emailProp) ? emailProp.GetString() : null;
             var firstName = userInfoDoc.RootElement.TryGetProperty("given_name", out var firstNameProp) ? firstNameProp.GetString() : null;
             var lastName = userInfoDoc.RootElement.TryGetProperty("family_name", out var lastNameProp) ? lastNameProp.GetString() : null;
             var id = userInfoDoc.RootElement.TryGetProperty("sub", out var idProp) ? idProp.GetString() : null;
             var vanityUrl = profileDoc.RootElement.TryGetProperty("vanityName", out var vanityProp) ? vanityProp.GetString() : null;
             var headline = profileDoc.RootElement.TryGetProperty("localizedHeadline", out var headlineProp) ? headlineProp.GetString() : null;
+            return (email, firstName, lastName, id, vanityUrl, headline);
+        }
 
-            if (string.IsNullOrEmpty(email))
-                return Results.BadRequest("Email not found in LinkedIn user info. Cannot create account.");
-            if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName))
-                return Results.BadRequest("First name or last name not found in LinkedIn user info. Cannot create account.");
-            if (string.IsNullOrEmpty(id))
-                return Results.BadRequest("LinkedIn ID not found in user info. Cannot create account.");
-
-            var linkedInPassword = GenerateLinkedInPassword(id);
-
-            var user = await _userManager.FindByEmailAsync(email);
-            if (user != null)
+        private async Task<IResult> HandleExistingUserAsync(ApplicationUser user, string id, string? vanityUrl, string? headline, string linkedInPassword, string email, string findjobnuUri)
+        {
+            if (user.IsLinkedInUser == false)
             {
-                if (user.IsLinkedInUser == false)
-                {
-                    user.HasVerifiedLinkedIn = true;
-                    user.LinkedInId = id;
-                    user.LinkedInProfileUrl = !string.IsNullOrEmpty(vanityUrl) ? LINKEDIN_VANITY_BASE_URL + vanityUrl : string.Empty;
-                    user.LinkedInHeadline = headline ?? string.Empty;
-                    user.EmailConfirmed = true;
-                    user.LastLinkedInSync = DateTime.UtcNow;
-                    await _userManager.UpdateAsync(user);
-                    return Results.Ok("Account has been linked");
-                }
+                user.HasVerifiedLinkedIn = true;
+                user.LinkedInId = id;
+                user.LinkedInProfileUrl = !string.IsNullOrEmpty(vanityUrl) ? LINKEDIN_VANITY_BASE_URL + vanityUrl : string.Empty;
+                user.LinkedInHeadline = headline ?? string.Empty;
+                user.EmailConfirmed = true;
+                user.LastLinkedInSync = DateTime.UtcNow;
+                await _userManager.UpdateAsync(user);
+                return Results.Redirect(findjobnuUri.Replace("/linkedin-auth", ""));
+            }
 
-                var signInResult = await _signInManager.CheckPasswordSignInAsync(user, linkedInPassword, lockoutOnFailure: false);
+            var signInResult = await _signInManager.CheckPasswordSignInAsync(user, linkedInPassword, lockoutOnFailure: false);
+            if (signInResult.Succeeded)
+            {
+                var authResponse = await _authService.LoginAsync(new LoginRequest { Email = email, Password = linkedInPassword }, isLinkedInUser: true);
+                if (authResponse == null || authResponse.AuthResponse == null || !authResponse.Success)
+                    return Results.BadRequest("Failed to create auth response for existing LinkedIn user.");
+                authResponse.AuthResponse.FindJobNuUri = findjobnuUri;
+                return RedirectIfSuccess(authResponse);
+            }
+            return Results.BadRequest("Failed to sign in existing user using LinkedIn values.");
+        }
+
+        private async Task<IResult> HandleNewUserAsync(string email, string firstName, string lastName, string id, string? vanityUrl, string? headline, string linkedInPassword, string findjobnuUri)
+        {
+            var applicationUser = new ApplicationUser
+            {
+                UserName = email,
+                Email = email,
+                FirstName = firstName,
+                LastName = lastName,
+                LinkedInId = id,
+                LinkedInProfileUrl = LINKEDIN_VANITY_BASE_URL + vanityUrl ?? string.Empty,
+                LinkedInHeadline = headline ?? string.Empty,
+                IsLinkedInUser = true,
+                HasVerifiedLinkedIn = true,
+                EmailConfirmed = true,
+                LastLinkedInSync = DateTime.UtcNow
+            };
+            var registerResult = await _userManager.CreateAsync(applicationUser, linkedInPassword);
+
+            if (registerResult.Succeeded)
+            {
+                var signInResult = await _signInManager.CheckPasswordSignInAsync(applicationUser, linkedInPassword, lockoutOnFailure: false);
                 if (signInResult.Succeeded)
                 {
                     var authResponse = await _authService.LoginAsync(new LoginRequest { Email = email, Password = linkedInPassword }, isLinkedInUser: true);
-                    if (authResponse == null || authResponse.AuthResponse == null || !authResponse.Success)
-                        return Results.BadRequest("Failed to create auth response for existing LinkedIn user.");
+                    if (authResponse == null || authResponse.AuthResponse == null  || !authResponse.Success)
+                        return Results.BadRequest("Failed to create auth response for new LinkedIn user.");
                     authResponse.AuthResponse.FindJobNuUri = findjobnuUri;
                     return RedirectIfSuccess(authResponse);
                 }
-                return Results.BadRequest("Failed to sign in existing user using LinkedIn values.");
-            } else
-            {
-                var applicationUser = new ApplicationUser
-                {
-                    UserName = email,
-                    Email = email,
-                    FirstName = firstName,
-                    LastName = lastName,
-                    LinkedInId = id,
-                    LinkedInProfileUrl = LINKEDIN_VANITY_BASE_URL + vanityUrl ?? string.Empty,
-                    LinkedInHeadline = headline ?? string.Empty,
-                    IsLinkedInUser = true,
-                    HasVerifiedLinkedIn = true,
-                    EmailConfirmed = true,
-                    LastLinkedInSync = DateTime.UtcNow
-                };
-                var registerResult = await _userManager.CreateAsync(applicationUser, linkedInPassword);
-
-                if (registerResult.Succeeded)
-                {
-                    var signInResult = await _signInManager.CheckPasswordSignInAsync(applicationUser, linkedInPassword, lockoutOnFailure: false);
-                    if (signInResult.Succeeded)
-                    {
-                        var authResponse = await _authService.LoginAsync(new LoginRequest { Email = email, Password = linkedInPassword }, isLinkedInUser: true);
-                        if (authResponse == null || authResponse.AuthResponse == null  || !authResponse.Success)
-                            return Results.BadRequest("Failed to create auth response for new LinkedIn user.");
-                        authResponse.AuthResponse.FindJobNuUri = findjobnuUri;
-                        return RedirectIfSuccess(authResponse);
-                    }
-                    return Results.BadRequest("Failed to sign in new user using LinkedIn values.");
-                }
-
-                return Results.BadRequest("Something went wrong.");
+                return Results.BadRequest("Failed to sign in new user using LinkedIn values.");
             }
+
+            return Results.BadRequest("Something went wrong.");
         }
 
         public string GetLoginUrl()
