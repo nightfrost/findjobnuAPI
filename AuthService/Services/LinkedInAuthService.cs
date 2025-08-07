@@ -245,7 +245,7 @@ namespace AuthService.Services
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
                 return Results.NotFound("User not found.");
-            if (!user.HasVerifiedLinkedIn || !user.IsLinkedInUser )
+            if (!user.HasVerifiedLinkedIn)
                 return Results.BadRequest("User does not have a LinkedIn profile linked.");
 
             if (user.IsLinkedInUser)
