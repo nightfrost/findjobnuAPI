@@ -5,20 +5,20 @@ using Microsoft.EntityFrameworkCore;
 namespace findjobnuAPI.Models
 {
     /// <summary>
-    /// Result of LinkedIn profile import operation
+    /// Result of Work profile import operation (formerly LinkedInProfileResult)
     /// </summary>
     public class LinkedInProfileResult
     {
         public bool Success { get; set; }
         public string? Error { get; set; }
         public string? UserId { get; set; }
-        public LinkedInProfile? Profile { get; set; }
+        public WorkProfile? Profile { get; set; } // Renamed from LinkedInProfile
     }
 
     /// <summary>
-    /// LinkedIn profile data
+    /// Work profile data (formerly LinkedInProfile)
     /// </summary>
-    public class LinkedInProfile
+    public class WorkProfile
     {
         [Key]
         public int Id { get; set; }
@@ -62,8 +62,8 @@ namespace findjobnuAPI.Models
         public string? Location { get; set; }
         public string? Description { get; set; }
         public string? LinkedinUrl { get; set; }
-        public int LinkedInProfileId { get; set; }
-        public LinkedInProfile? LinkedInProfile { get; set; }
+        public int WorkProfileId { get; set; } // Renamed from LinkedInProfileId
+        public WorkProfile? WorkProfile { get; set; } // Renamed from LinkedInProfile
     }
 
     public class Education
@@ -76,8 +76,8 @@ namespace findjobnuAPI.Models
         public string? ToDate { get; set; }
         public string? Description { get; set; }
         public string? LinkedinUrl { get; set; }
-        public int LinkedInProfileId { get; set; }
-        public LinkedInProfile? LinkedInProfile { get; set; }
+        public int WorkProfileId { get; set; } // Renamed from LinkedInProfileId
+        public WorkProfile? WorkProfile { get; set; } // Renamed from LinkedInProfile
     }
 
     public class Interest
@@ -85,8 +85,8 @@ namespace findjobnuAPI.Models
         [Key]
         public int Id { get; set; }
         public string? Title { get; set; }
-        public int LinkedInProfileId { get; set; }
-        public LinkedInProfile? LinkedInProfile { get; set; }
+        public int WorkProfileId { get; set; } // Renamed from LinkedInProfileId
+        public WorkProfile? WorkProfile { get; set; } // Renamed from LinkedInProfile
     }
 
     public class Accomplishment
@@ -95,8 +95,8 @@ namespace findjobnuAPI.Models
         public int Id { get; set; }
         public string? Category { get; set; }
         public string? Title { get; set; }
-        public int LinkedInProfileId { get; set; }
-        public LinkedInProfile? LinkedInProfile { get; set; }
+        public int WorkProfileId { get; set; } // Renamed from LinkedInProfileId
+        public WorkProfile? WorkProfile { get; set; } // Renamed from LinkedInProfile
     }
 
     public class Contact
@@ -106,7 +106,7 @@ namespace findjobnuAPI.Models
         public string? Name { get; set; }
         public string? Occupation { get; set; }
         public string? Url { get; set; }
-        public int LinkedInProfileId { get; set; }
-        public LinkedInProfile? LinkedInProfile { get; set; }
+        public int WorkProfileId { get; set; } // Renamed from LinkedInProfileId
+        public WorkProfile? WorkProfile { get; set; } // Renamed from LinkedInProfile
     }
 }

@@ -13,7 +13,7 @@ namespace findjobnuAPI.Repositories.Context
         public DbSet<Category> Categories { get; set; }
         public DbSet<Cities> Companies { get; set; }
         public DbSet<UserProfile> UserProfile { get; set; }
-        public DbSet<LinkedInProfile> LinkedInProfiles { get; set; }
+        public DbSet<WorkProfile> WorkProfiles { get; set; } // Renamed from LinkedInProfiles
         public DbSet<Experience> Experiences { get; set; }
         public DbSet<Education> Educations { get; set; }
         public DbSet<Interest> Interests { get; set; }
@@ -78,40 +78,40 @@ namespace findjobnuAPI.Repositories.Context
                     }
                 );
 
-            // LinkedInProfile relationships
-            modelBuilder.Entity<LinkedInProfile>()
+            // WorkProfile relationships (renamed from LinkedInProfile)
+            modelBuilder.Entity<WorkProfile>()
                 .OwnsOne(l => l.BasicInfo);
-            modelBuilder.Entity<LinkedInProfile>()
+            modelBuilder.Entity<WorkProfile>()
                 .HasMany(l => l.Experiences)
-                .WithOne(e => e.LinkedInProfile)
-                .HasForeignKey(e => e.LinkedInProfileId)
+                .WithOne(e => e.WorkProfile)
+                .HasForeignKey(e => e.WorkProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<LinkedInProfile>()
+            modelBuilder.Entity<WorkProfile>()
                 .HasMany(l => l.Educations)
-                .WithOne(e => e.LinkedInProfile)
-                .HasForeignKey(e => e.LinkedInProfileId)
+                .WithOne(e => e.WorkProfile)
+                .HasForeignKey(e => e.WorkProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<LinkedInProfile>()
+            modelBuilder.Entity<WorkProfile>()
                 .HasMany(l => l.Interests)
-                .WithOne(e => e.LinkedInProfile)
-                .HasForeignKey(e => e.LinkedInProfileId)
+                .WithOne(e => e.WorkProfile)
+                .HasForeignKey(e => e.WorkProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<LinkedInProfile>()
+            modelBuilder.Entity<WorkProfile>()
                 .HasMany(l => l.Accomplishments)
-                .WithOne(e => e.LinkedInProfile)
-                .HasForeignKey(e => e.LinkedInProfileId)
+                .WithOne(e => e.WorkProfile)
+                .HasForeignKey(e => e.WorkProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<LinkedInProfile>()
+            modelBuilder.Entity<WorkProfile>()
                 .HasMany(l => l.Contacts)
-                .WithOne(e => e.LinkedInProfile)
-                .HasForeignKey(e => e.LinkedInProfileId)
+                .WithOne(e => e.WorkProfile)
+                .HasForeignKey(e => e.WorkProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // LinkedInProfile <-> UserProfile (required one-to-one)
-            modelBuilder.Entity<LinkedInProfile>()
+            // WorkProfile <-> UserProfile (required one-to-one)
+            modelBuilder.Entity<WorkProfile>()
                 .HasOne(l => l.UserProfile)
                 .WithOne()
-                .HasForeignKey<LinkedInProfile>(l => l.UserProfileId)
+                .HasForeignKey<WorkProfile>(l => l.UserProfileId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Cascade);
         }

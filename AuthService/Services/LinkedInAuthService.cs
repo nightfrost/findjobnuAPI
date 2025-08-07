@@ -237,8 +237,38 @@ namespace AuthService.Services
                 return Results.BadRequest(loginResult.ErrorMessage);
             }
 
-            return Results.BadRequest("Login failed for an unknown reason.");
-            
+            return Results.BadRequest("Login failed for an unknown reason.");   
+        }
+
+        public async Task<IResult> UnlinkLinkedInProfile(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return Results.NotFound("User not found.");
+            if (!user.HasVerifiedLinkedIn || !user.IsLinkedInUser )
+                return Results.BadRequest("User does not have a LinkedIn profile linked.");
+
+            if (user.IsLinkedInUser)
+            {
+                user.HasVerifiedLinkedIn = false;
+                user.LinkedInId = null;
+                user.LinkedInProfileUrl = null;
+                user.LinkedInHeadline = null;
+                user.LockoutEnabled = true; // Lock the user account as it is not a findjob.nu user.
+            } else
+            {
+                user.HasVerifiedLinkedIn = false;
+                user.LinkedInId = null;
+                user.LinkedInProfileUrl = null;
+                user.LinkedInHeadline = null;
+            }
+
+            var updateResult = await _userManager.UpdateAsync(user);
+
+            if (updateResult.Succeeded)
+                return Results.Ok("LinkedIn profile unlinked successfully.");
+            else
+                return Results.BadRequest("Something went wrong.");
         }
     }
 }
