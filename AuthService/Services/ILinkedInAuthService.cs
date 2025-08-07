@@ -7,5 +7,6 @@ namespace AuthService.Services
     {
         Task<IResult> HandleCallbackAsync(HttpContext context);
         string GetLoginUrl();
+        Task<IResult> UnlinkLinkedInProfile(string userId);
     }
 }

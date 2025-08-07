@@ -1,10 +1,6 @@
 using AuthService.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text.Json;
-using System.Threading.Tasks;
-using AuthService.Models;
+using System.Security.Claims;
 
 namespace AuthService.Endpoints;
 
@@ -26,5 +22,22 @@ public static class LinkedInAuthEndpoints
             return await linkedInAuthService.HandleCallbackAsync(context);
         })
         .WithName("LinkedInCallback");
+
+        group.MapPost("/unlink", async (HttpContext context, [FromServices] ILinkedInAuthService linkedInAuthService) =>
+        {
+            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Results.BadRequest("User ID not found in claims.");
+            }
+
+            return await linkedInAuthService.UnlinkLinkedInProfile(userId);
+        })
+        .WithName("UnlinkLinkedInProfile")
+        .RequireAuthorization()
+        .WithSummary("Unlinks a LinkedIn profile from the user's account.")
+        .WithDescription("Removes the LinkedIn profile association for the specified user ID.")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest);
     }
 }
