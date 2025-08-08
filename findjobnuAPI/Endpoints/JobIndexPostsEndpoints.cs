@@ -86,7 +86,7 @@ public static class JobIndexPostsEndpoints
                 return TypedResults.BadRequest("No WorkProfile setup.");
 
             var pagedList = await jobService.GetRecommendedJobsByUserAndWorkProfile(userProfile, workProfile, page);
-            return pagedList?.Items.Count() >= 0 ? TypedResults.Ok(pagedList) :
+            return pagedList?.Items.Any() == true ? TypedResults.Ok(pagedList) :
                 TypedResults.NoContent();
         })
         .RequireAuthorization()
