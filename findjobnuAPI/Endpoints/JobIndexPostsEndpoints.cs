@@ -67,5 +67,30 @@ public static class JobIndexPostsEndpoints
         .RequireAuthorization()
         .WithName("GetSavedJobPostsByUser")
         .WithOpenApi();
+
+        group.MapGet("/recommended-jobs", async Task<Results<Ok<PagedList<JobIndexPosts>>, UnauthorizedHttpResult, BadRequest<string>, NoContent>> (
+            int page, 
+            HttpContext httpContext, 
+            IJobIndexPostsService jobService, 
+            IUserProfileService upService, 
+            IWorkProfileService wpService) =>
+        {
+            var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return TypedResults.Unauthorized();
+            var userProfile = await upService.GetByUserIdAsync(userId);
+            if (userProfile == null)
+                return TypedResults.BadRequest("No UserProfile setup.");
+            var workProfile = await wpService.GetByUserProfileIdAsync(userProfile.Id);
+            if (workProfile == null)
+                return TypedResults.BadRequest("No WorkProfile setup.");
+
+            var pagedList = await jobService.GetRecommendedJobsByUserAndWorkProfile(userProfile, workProfile, page);
+            return pagedList?.Items.Any() == true ? TypedResults.Ok(pagedList) :
+                TypedResults.NoContent();
+        })
+        .RequireAuthorization()
+        .WithName("GetRecommendedJobsForUser")
+        .WithOpenApi();
     }
 }
