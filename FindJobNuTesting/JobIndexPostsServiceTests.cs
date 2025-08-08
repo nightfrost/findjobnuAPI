@@ -74,11 +74,13 @@ namespace findjobnuAPI.Tests.Services
             var context = GetDbContextWithData();
             var service = new JobIndexPostsService(context);
 
-            var categories = await service.GetCategoriesAsync();
+            var response = await service.GetCategoriesAsync();
 
-            Assert.Contains("IT", categories);
-            Assert.Contains("Design", categories);
-            Assert.Equal(2, categories.Count);
+            Assert.True(response.Success);
+            Assert.Null(response.ErrorMessage);
+            Assert.Contains("IT", response.CategoryAndAmountOfJobs.Keys);
+            Assert.Contains("Design", response.CategoryAndAmountOfJobs.Keys);
+            Assert.Equal(2, response.CategoryAndAmountOfJobs.Count);
         }
 
         [Fact]

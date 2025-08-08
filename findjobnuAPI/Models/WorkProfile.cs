@@ -32,6 +32,7 @@ namespace findjobnuAPI.Models
         public ICollection<Interest>? Interests { get; set; }
         public ICollection<Accomplishment>? Accomplishments { get; set; }
         public ICollection<Contact>? Contacts { get; set; }
+        public ICollection<Skill>? Skills { get; set; } // <-- Added
     }
 
     /// <summary>
@@ -108,5 +109,25 @@ namespace findjobnuAPI.Models
         public string? Url { get; set; }
         public int WorkProfileId { get; set; } // Renamed from LinkedInProfileId
         public WorkProfile? WorkProfile { get; set; } // Renamed from LinkedInProfile
+    }
+
+    public enum SkillProficiency
+    {
+        Beginner,
+        Intermediate,
+        Advanced,
+        Expert
+    }
+
+    public class Skill
+    {
+        [Key]
+        public int Id { get; set; }
+        [Required]
+        public string Name { get; set; } = null!;
+        [Required]
+        public SkillProficiency Proficiency { get; set; }
+        public int WorkProfileId { get; set; }
+        public WorkProfile? WorkProfile { get; set; }
     }
 }

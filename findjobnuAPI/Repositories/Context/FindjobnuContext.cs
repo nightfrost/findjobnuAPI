@@ -13,12 +13,13 @@ namespace findjobnuAPI.Repositories.Context
         public DbSet<Category> Categories { get; set; }
         public DbSet<Cities> Companies { get; set; }
         public DbSet<UserProfile> UserProfile { get; set; }
-        public DbSet<WorkProfile> WorkProfiles { get; set; } // Renamed from LinkedInProfiles
+        public DbSet<WorkProfile> WorkProfiles { get; set; }
         public DbSet<Experience> Experiences { get; set; }
         public DbSet<Education> Educations { get; set; }
         public DbSet<Interest> Interests { get; set; }
         public DbSet<Accomplishment> Accomplishments { get; set; }
         public DbSet<Contact> Contacts { get; set; }
+        public DbSet<Skill> Skills { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -103,6 +104,11 @@ namespace findjobnuAPI.Repositories.Context
                 .OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<WorkProfile>()
                 .HasMany(l => l.Contacts)
+                .WithOne(e => e.WorkProfile)
+                .HasForeignKey(e => e.WorkProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<WorkProfile>()
+                .HasMany(l => l.Skills)
                 .WithOne(e => e.WorkProfile)
                 .HasForeignKey(e => e.WorkProfileId)
                 .OnDelete(DeleteBehavior.Cascade);

@@ -54,6 +54,7 @@ namespace findjobnuAPI
             builder.Services.AddHttpClient();
             builder.Services.AddScoped<IUserProfileService, UserProfileService>();
             builder.Services.AddScoped<IJobIndexPostsService, JobIndexPostsService>();
+            builder.Services.AddScoped<IWorkProfileService, WorkProfileService>();
             builder.Services.AddScoped<ILinkedInProfileService>(provider =>
             {
                 var config = provider.GetRequiredService<IConfiguration>();
@@ -108,6 +109,7 @@ namespace findjobnuAPI
             app.MapJobIndexPostsEndpoints();
             app.MapCitiesEndpoints();
             app.MapUserProfileEndpoints();
+            app.MapWorkProfileEndpoints();
 
             app.Run();
         }

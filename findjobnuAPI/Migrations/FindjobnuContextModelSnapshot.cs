@@ -22,6 +22,21 @@ namespace findjobnuAPI.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("JobCategories", b =>
+                {
+                    b.Property<int>("JobID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CategoryID")
+                        .HasColumnType("int");
+
+                    b.HasKey("JobID", "CategoryID");
+
+                    b.HasIndex("CategoryID");
+
+                    b.ToTable("JobCategories", (string)null);
+                });
+
             modelBuilder.Entity("findjobnuAPI.Models.Accomplishment", b =>
                 {
                     b.Property<int>("Id")
@@ -33,17 +48,35 @@ namespace findjobnuAPI.Migrations
                     b.Property<string>("Category")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("LinkedInProfileId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Title")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("WorkProfileId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("LinkedInProfileId");
+                    b.HasIndex("WorkProfileId");
 
                     b.ToTable("Accomplishments");
+                });
+
+            modelBuilder.Entity("findjobnuAPI.Models.Category", b =>
+                {
+                    b.Property<int>("CategoryID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("CategoryID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CategoryID"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("CategoryID");
+
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("findjobnuAPI.Models.Cities", b =>
@@ -71,9 +104,6 @@ namespace findjobnuAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("LinkedInProfileId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
@@ -83,9 +113,12 @@ namespace findjobnuAPI.Migrations
                     b.Property<string>("Url")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("WorkProfileId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("LinkedInProfileId");
+                    b.HasIndex("WorkProfileId");
 
                     b.ToTable("Contacts");
                 });
@@ -110,18 +143,18 @@ namespace findjobnuAPI.Migrations
                     b.Property<string>("Institution")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("LinkedInProfileId")
-                        .HasColumnType("int");
-
                     b.Property<string>("LinkedinUrl")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ToDate")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("WorkProfileId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("LinkedInProfileId");
+                    b.HasIndex("WorkProfileId");
 
                     b.ToTable("Educations");
                 });
@@ -146,9 +179,6 @@ namespace findjobnuAPI.Migrations
                     b.Property<string>("FromDate")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("LinkedInProfileId")
-                        .HasColumnType("int");
-
                     b.Property<string>("LinkedinUrl")
                         .HasColumnType("nvarchar(max)");
 
@@ -161,9 +191,12 @@ namespace findjobnuAPI.Migrations
                     b.Property<string>("ToDate")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("WorkProfileId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("LinkedInProfileId");
+                    b.HasIndex("WorkProfileId");
 
                     b.ToTable("Experiences");
                 });
@@ -176,15 +209,15 @@ namespace findjobnuAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("LinkedInProfileId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Title")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("WorkProfileId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("LinkedInProfileId");
+                    b.HasIndex("WorkProfileId");
 
                     b.ToTable("Interests");
                 });
@@ -193,15 +226,13 @@ namespace findjobnuAPI.Migrations
                 {
                     b.Property<int>("JobID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("JobID");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("JobID"));
 
                     b.Property<byte[]>("BannerPicture")
                         .HasColumnType("varbinary(max)");
-
-                    b.Property<string>("Category")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CompanyName")
                         .HasColumnType("nvarchar(max)");
@@ -239,7 +270,7 @@ namespace findjobnuAPI.Migrations
                     b.ToTable("JobIndexPostingsExtended", (string)null);
                 });
 
-            modelBuilder.Entity("findjobnuAPI.Models.LinkedInProfile", b =>
+            modelBuilder.Entity("findjobnuAPI.Models.Skill", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -247,15 +278,21 @@ namespace findjobnuAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("UserProfileId")
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Proficiency")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WorkProfileId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserProfileId")
-                        .IsUnique();
+                    b.HasIndex("WorkProfileId");
 
-                    b.ToTable("LinkedInProfiles");
+                    b.ToTable("Skills");
                 });
 
             modelBuilder.Entity("findjobnuAPI.Models.UserProfile", b =>
@@ -310,72 +347,117 @@ namespace findjobnuAPI.Migrations
                     b.ToTable("UserProfile");
                 });
 
-            modelBuilder.Entity("findjobnuAPI.Models.Accomplishment", b =>
+            modelBuilder.Entity("findjobnuAPI.Models.WorkProfile", b =>
                 {
-                    b.HasOne("findjobnuAPI.Models.LinkedInProfile", "LinkedInProfile")
-                        .WithMany("Accomplishments")
-                        .HasForeignKey("LinkedInProfileId")
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("UserProfileId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserProfileId")
+                        .IsUnique();
+
+                    b.ToTable("WorkProfiles");
+                });
+
+            modelBuilder.Entity("JobCategories", b =>
+                {
+                    b.HasOne("findjobnuAPI.Models.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("LinkedInProfile");
+                    b.HasOne("findjobnuAPI.Models.JobIndexPosts", null)
+                        .WithMany()
+                        .HasForeignKey("JobID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("findjobnuAPI.Models.Accomplishment", b =>
+                {
+                    b.HasOne("findjobnuAPI.Models.WorkProfile", "WorkProfile")
+                        .WithMany("Accomplishments")
+                        .HasForeignKey("WorkProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("WorkProfile");
                 });
 
             modelBuilder.Entity("findjobnuAPI.Models.Contact", b =>
                 {
-                    b.HasOne("findjobnuAPI.Models.LinkedInProfile", "LinkedInProfile")
+                    b.HasOne("findjobnuAPI.Models.WorkProfile", "WorkProfile")
                         .WithMany("Contacts")
-                        .HasForeignKey("LinkedInProfileId")
+                        .HasForeignKey("WorkProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("LinkedInProfile");
+                    b.Navigation("WorkProfile");
                 });
 
             modelBuilder.Entity("findjobnuAPI.Models.Education", b =>
                 {
-                    b.HasOne("findjobnuAPI.Models.LinkedInProfile", "LinkedInProfile")
+                    b.HasOne("findjobnuAPI.Models.WorkProfile", "WorkProfile")
                         .WithMany("Educations")
-                        .HasForeignKey("LinkedInProfileId")
+                        .HasForeignKey("WorkProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("LinkedInProfile");
+                    b.Navigation("WorkProfile");
                 });
 
             modelBuilder.Entity("findjobnuAPI.Models.Experience", b =>
                 {
-                    b.HasOne("findjobnuAPI.Models.LinkedInProfile", "LinkedInProfile")
+                    b.HasOne("findjobnuAPI.Models.WorkProfile", "WorkProfile")
                         .WithMany("Experiences")
-                        .HasForeignKey("LinkedInProfileId")
+                        .HasForeignKey("WorkProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("LinkedInProfile");
+                    b.Navigation("WorkProfile");
                 });
 
             modelBuilder.Entity("findjobnuAPI.Models.Interest", b =>
                 {
-                    b.HasOne("findjobnuAPI.Models.LinkedInProfile", "LinkedInProfile")
+                    b.HasOne("findjobnuAPI.Models.WorkProfile", "WorkProfile")
                         .WithMany("Interests")
-                        .HasForeignKey("LinkedInProfileId")
+                        .HasForeignKey("WorkProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("LinkedInProfile");
+                    b.Navigation("WorkProfile");
                 });
 
-            modelBuilder.Entity("findjobnuAPI.Models.LinkedInProfile", b =>
+            modelBuilder.Entity("findjobnuAPI.Models.Skill", b =>
+                {
+                    b.HasOne("findjobnuAPI.Models.WorkProfile", "WorkProfile")
+                        .WithMany("Skills")
+                        .HasForeignKey("WorkProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("WorkProfile");
+                });
+
+            modelBuilder.Entity("findjobnuAPI.Models.WorkProfile", b =>
                 {
                     b.HasOne("findjobnuAPI.Models.UserProfile", "UserProfile")
                         .WithOne()
-                        .HasForeignKey("findjobnuAPI.Models.LinkedInProfile", "UserProfileId")
+                        .HasForeignKey("findjobnuAPI.Models.WorkProfile", "UserProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.OwnsOne("findjobnuAPI.Models.BasicInfo", "BasicInfo", b1 =>
                         {
-                            b1.Property<int>("LinkedInProfileId")
+                            b1.Property<int>("WorkProfileId")
                                 .HasColumnType("int");
 
                             b1.Property<string>("About")
@@ -399,12 +481,12 @@ namespace findjobnuAPI.Migrations
                             b1.Property<bool>("OpenToWork")
                                 .HasColumnType("bit");
 
-                            b1.HasKey("LinkedInProfileId");
+                            b1.HasKey("WorkProfileId");
 
-                            b1.ToTable("LinkedInProfiles");
+                            b1.ToTable("WorkProfiles");
 
                             b1.WithOwner()
-                                .HasForeignKey("LinkedInProfileId");
+                                .HasForeignKey("WorkProfileId");
                         });
 
                     b.Navigation("BasicInfo");
@@ -412,7 +494,7 @@ namespace findjobnuAPI.Migrations
                     b.Navigation("UserProfile");
                 });
 
-            modelBuilder.Entity("findjobnuAPI.Models.LinkedInProfile", b =>
+            modelBuilder.Entity("findjobnuAPI.Models.WorkProfile", b =>
                 {
                     b.Navigation("Accomplishments");
 
@@ -423,6 +505,8 @@ namespace findjobnuAPI.Migrations
                     b.Navigation("Experiences");
 
                     b.Navigation("Interests");
+
+                    b.Navigation("Skills");
                 });
 #pragma warning restore 612, 618
         }
