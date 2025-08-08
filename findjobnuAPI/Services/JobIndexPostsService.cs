@@ -146,21 +146,21 @@ namespace findjobnuAPI.Services
             if (upKeywords != null && upKeywords.Count > 0)
                 wpKeywords.UnionWith(upKeywords);
 
-            var query = _db.JobIndexPosts
+            var baseQuery = _db.JobIndexPosts
                 .Include(j => j.Categories)
                 .Where(j => (j.Keywords != null && j.Keywords.Any(k => wpKeywords.Contains(k))) 
                 || (j.CompanyName != null && wpKeywords.Contains(j.CompanyName))
                 || (j.JobTitle != null && wpKeywords.Contains(j.JobTitle)))
-                .Skip((page - 1) * pagesize)
-                .Take(pagesize)
                 .AsNoTracking();
 
-            var totalCount = await query.CountAsync();
+            var totalCount = await baseQuery.CountAsync();
             if (totalCount == 0)
                 return new PagedList<JobIndexPosts>(0, pagesize, page, []);
 
-            var items = await query
+            var items = await baseQuery
                 .OrderBy(j => j.JobID)
+                .Skip((page - 1) * pagesize)
+                .Take(pagesize)
                 .ToListAsync();
             return new PagedList<JobIndexPosts>(totalCount, pagesize, page, items);
         }
