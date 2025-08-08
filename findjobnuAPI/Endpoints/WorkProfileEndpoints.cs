@@ -37,7 +37,7 @@ public static class WorkProfileEndpoints
         group.MapPut("/{id:int}", async (int id, WorkProfile workProfile, IWorkProfileService service, HttpContext context) =>
         {
             var authenticatedUserId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (authenticatedUserId == null || workProfile.UserProfile.UserId != authenticatedUserId)
+            if (authenticatedUserId == null || workProfile.UserProfile == null || workProfile.UserProfile.UserId != authenticatedUserId)
                 return Results.Forbid();
             var updated = await service.UpdateAsync(id, workProfile, authenticatedUserId);
             return updated ? Results.Ok() : Results.NotFound();
