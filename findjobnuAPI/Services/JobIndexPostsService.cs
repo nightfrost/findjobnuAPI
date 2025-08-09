@@ -1,7 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
-using findjobnuAPI.Models;
+﻿using findjobnuAPI.Models;
 using findjobnuAPI.Repositories.Context;
 using Humanizer.Localisation.DateToOrdinalWords;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace findjobnuAPI.Services
@@ -32,7 +33,7 @@ namespace findjobnuAPI.Services
             return new PagedList<JobIndexPosts>(totalCount, pageSize, page, items);
         }
 
-        public async Task<PagedList<JobIndexPosts>?> SearchAsync(string? searchTerm, string? location, string? category, DateTime? postedAfter, DateTime? postedBefore, int page)
+        public async Task<PagedList<JobIndexPosts>> SearchAsync(string? searchTerm, string? location, string? category, DateTime? postedAfter, DateTime? postedBefore, int page)
         {
             var pageSize = 20;
             var query = _db.JobIndexPosts.Include(j => j.Categories).AsQueryable();
@@ -56,7 +57,7 @@ namespace findjobnuAPI.Services
                 query = query.Where(j => j.Published <= postedBefore.Value);
 
             var totalCount = await query.CountAsync();
-            if (totalCount == 0) return null;
+            if (totalCount == 0) return new PagedList<JobIndexPosts>(0, pageSize, page, []);
 
             var items = await query
                 .OrderBy(j => j.JobID)
@@ -68,11 +69,12 @@ namespace findjobnuAPI.Services
             return new PagedList<JobIndexPosts>(totalCount, pageSize, page, items);
         }
 
-        public async Task<JobIndexPosts?> GetByIdAsync(int id)
+        public async Task<JobIndexPosts> GetByIdAsync(int id)
         {
-            return await _db.JobIndexPosts.AsNoTracking()
+            return await _db.JobIndexPosts
                 .Include(j => j.Categories)
-                .FirstOrDefaultAsync(model => model.JobID == id);
+                .AsNoTracking()
+                .FirstOrDefaultAsync(j => j.JobID == id) ?? new JobIndexPosts();
         }
 
         public async Task<CategoriesResponse> GetCategoriesAsync()
@@ -96,61 +98,40 @@ namespace findjobnuAPI.Services
             }
         }
 
-        public async Task<PagedList<JobIndexPosts>> GetSavedJobsByUserId(string userid, int page)
+        public async Task<PagedList<JobIndexPosts>> GetSavedJobsByUserId(string userId, int page)
         {
-            int pagesize = 20;
+            var profile = await _db.Profiles.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId);
+            if (profile == null || profile.SavedJobPosts == null || !profile.SavedJobPosts.Any())
+                return new PagedList<JobIndexPosts>(0, 10, page, []);
 
-            var userSavedJobIds = await _db.UserProfile
-                .Where(up => up.UserId == userid)
-                .Select(up => up.SavedJobPosts)
-                .FirstOrDefaultAsync();
-
-            if (userSavedJobIds == null || userSavedJobIds.Count == 0)
-                return new PagedList<JobIndexPosts>(0, pagesize, page, []);
-
-            var jobIds = userSavedJobIds
-                .Select(id => int.TryParse(id, out var intId) ? (int?)intId : null)
+            var jobIds = profile.SavedJobPosts
+                .Select(id => int.TryParse(id, out var jid) ? jid : (int?)null)
                 .Where(id => id.HasValue)
                 .Select(id => id!.Value)
                 .ToList();
 
-            var query = _db.JobIndexPosts
-                .Include(j => j.Categories)
-                .Where(j => jobIds.Contains(j.JobID))
-                .Skip((page - 1) * pagesize)
-                .Take(pagesize)
-                .AsNoTracking();
-
-            var totalCount = await query.CountAsync();
-            var items = await query
-                .OrderBy(j => j.JobID)
-                .ToListAsync();
-
-            return new PagedList<JobIndexPosts>(totalCount, pagesize, page, items);
+            var jobs = await _db.JobIndexPosts.Where(j => jobIds.Contains(j.JobID)).ToListAsync();
+            return new PagedList<JobIndexPosts>(jobs.Count, 10, page, jobs);
         }
 
-        public async Task<PagedList<JobIndexPosts>> GetRecommendedJobsByUserAndWorkProfile(UserProfile userProfile, WorkProfile workProfile, int page)
+        public async Task<PagedList<JobIndexPosts>> GetRecommendedJobsByUserAndProfile(Profile profile, int page)
         {
             int pagesize = 20;
 
-            //verify that userProfile and workProfile have atleast 1 reference to relevant data
-            if ((userProfile.Keywords == null || userProfile.Keywords.Count == 0)
-                && (workProfile.Experiences == null || workProfile.Experiences.Count == 0)
-                && (workProfile.Interests == null || workProfile.Interests.Count == 0)
-                && (workProfile.BasicInfo == null || workProfile.BasicInfo.JobTitle.IsNullOrEmpty()))
+            //verify that profile has atleast 1 reference to relevant data
+            if ((profile.Keywords == null || profile.Keywords.Count == 0)
+                && (profile.Experiences == null || profile.Experiences.Count == 0)
+                && (profile.Interests == null || profile.Interests.Count == 0)
+                && (profile.BasicInfo == null || profile.BasicInfo.JobTitle.IsNullOrEmpty()))
                 return new PagedList<JobIndexPosts>(0, pagesize, page, []);
 
-            var upKeywords = userProfile.Keywords?.Select(k => k.Trim()).ToHashSet();
-            var wpKeywords = GetKeywordsFromWorkProfile(workProfile);
-            
-            if (upKeywords != null && upKeywords.Count > 0)
-                wpKeywords.UnionWith(upKeywords);
+            var keywords = GetKeywordsFromProfile(profile);
 
             var baseQuery = _db.JobIndexPosts
                 .Include(j => j.Categories)
-                .Where(j => (j.Keywords != null && j.Keywords.Any(k => wpKeywords.Contains(k))) 
-                || (j.CompanyName != null && wpKeywords.Contains(j.CompanyName))
-                || (j.JobTitle != null && wpKeywords.Contains(j.JobTitle)))
+                .Where(j => (j.Keywords != null && j.Keywords.Any(k => keywords.Contains(k))) 
+                || (j.CompanyName != null && keywords.Contains(j.CompanyName))
+                || (j.JobTitle != null && keywords.Contains(j.JobTitle)))
                 .AsNoTracking();
 
             var totalCount = await baseQuery.CountAsync();
@@ -165,19 +146,27 @@ namespace findjobnuAPI.Services
             return new PagedList<JobIndexPosts>(totalCount, pagesize, page, items);
         }
 
-        private static HashSet<string> GetKeywordsFromWorkProfile(WorkProfile workProfile)
+        private static HashSet<string> GetKeywordsFromProfile(Profile profile)
         {
             var keywords = new HashSet<string>();
-            if (workProfile.BasicInfo != null)
+            if (profile.Keywords != null)
             {
-                if (!string.IsNullOrWhiteSpace(workProfile.BasicInfo.JobTitle))
-                    keywords.Add(workProfile.BasicInfo.JobTitle);
-                if (!string.IsNullOrWhiteSpace(workProfile.BasicInfo.Company))
-                    keywords.Add(workProfile.BasicInfo.Company);
+                foreach (var keyword in profile.Keywords)
+                {
+                    if (!string.IsNullOrWhiteSpace(keyword))
+                        keywords.Add(keyword);
+                }
             }
-            if (workProfile.Experiences != null)
+            if (profile.BasicInfo != null)
             {
-                foreach (var exp in workProfile.Experiences)
+                if (!string.IsNullOrWhiteSpace(profile.BasicInfo.JobTitle))
+                    keywords.Add(profile.BasicInfo.JobTitle);
+                if (!string.IsNullOrWhiteSpace(profile.BasicInfo.Company))
+                    keywords.Add(profile.BasicInfo.Company);
+            }
+            if (profile.Experiences != null)
+            {
+                foreach (var exp in profile.Experiences)
                 {
                     if (!string.IsNullOrWhiteSpace(exp.PositionTitle))
                         keywords.Add(exp.PositionTitle);
@@ -185,17 +174,17 @@ namespace findjobnuAPI.Services
                         keywords.Add(exp.Company);
                 }
             }
-            if (workProfile.Interests != null)
+            if (profile.Interests != null)
             {
-                foreach (var interest in workProfile.Interests)
+                foreach (var interest in profile.Interests)
                 {
                     if (!string.IsNullOrWhiteSpace(interest.Title))
                         keywords.Add(interest.Title);
                 }
             }
-            if (workProfile.Skills != null)
+            if (profile.Skills != null)
             {
-                foreach (var skill in workProfile.Skills)
+                foreach (var skill in profile.Skills)
                 {
                     if (!string.IsNullOrWhiteSpace(skill.Name))
                         keywords.Add(skill.Name);

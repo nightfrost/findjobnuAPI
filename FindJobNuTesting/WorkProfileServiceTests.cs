@@ -9,62 +9,59 @@ using System.Linq;
 
 namespace findjobnuAPI.Tests.Services
 {
-    public class WorkProfileServiceTests
+    public class ProfileServiceTests
     {
-        private WorkProfileService GetServiceWithInMemoryDb(out FindjobnuContext context)
+        private ProfileService GetServiceWithInMemoryDb(out FindjobnuContext context)
         {
             var options = new DbContextOptionsBuilder<FindjobnuContext>()
                 .UseInMemoryDatabase(databaseName: System.Guid.NewGuid().ToString())
                 .Options;
             context = new FindjobnuContext(options);
-            return new WorkProfileService(context);
+            return new ProfileService(context);
         }
 
-        private UserProfile CreateUserProfile(FindjobnuContext context, string userId = "user1")
+        private Profile CreateProfile(FindjobnuContext context, string userId = "user1")
         {
-            var user = new UserProfile { Id = 1, UserId = userId, FirstName = "Test", LastName = "User" };
-            context.UserProfile.Add(user);
+            var profile = new Profile { Id = 1, UserId = userId, BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" } };
+            context.Profiles.Add(profile);
             context.SaveChanges();
-            return user;
+            return profile;
         }
 
         [Fact]
-        public async Task CreateAsync_AddsWorkProfile()
+        public async Task CreateAsync_AddsProfile()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var user = CreateUserProfile(context);
-            var profile = new WorkProfile { UserProfileId = user.Id, UserProfile = user, BasicInfo = new BasicInfo { Name = "Test" } };
+            var profile = new Profile { UserId = "user1", BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" } };
 
             var result = await service.CreateAsync(profile);
 
             Assert.NotNull(result);
-            Assert.Equal(user.Id, result!.UserProfileId);
-            Assert.Equal("Test", result.BasicInfo!.Name);
+            Assert.Equal("user1", result!.UserId);
+            Assert.Equal("Test", result.BasicInfo!.FirstName);
         }
 
         [Fact]
-        public async Task GetByUserProfileIdAsync_ReturnsProfileWithRelations()
+        public async Task GetByUserIdAsync_ReturnsProfileWithRelations()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var user = CreateUserProfile(context);
-            var profile = new WorkProfile
+            var profile = new Profile
             {
-                UserProfileId = user.Id,
-                UserProfile = user,
-                BasicInfo = new BasicInfo { Name = "Test" },
+                UserId = "user2",
+                BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" },
                 Experiences = new List<Experience> { new Experience { PositionTitle = "Dev" } },
                 Educations = new List<Education> { new Education { Institution = "Uni" } },
                 Interests = new List<Interest> { new Interest { Title = "Coding" } },
                 Accomplishments = new List<Accomplishment> { new Accomplishment { Title = "Award" } },
                 Contacts = new List<Contact> { new Contact { Name = "Contact1" } }
             };
-            context.WorkProfiles.Add(profile);
+            context.Profiles.Add(profile);
             context.SaveChanges();
 
-            var result = await service.GetByUserProfileIdAsync(user.Id);
+            var result = await service.GetByUserIdAsync("user2");
 
             Assert.NotNull(result);
-            Assert.Equal("Test", result!.BasicInfo!.Name);
+            Assert.Equal("Test", result!.BasicInfo!.FirstName);
             Assert.Single(result.Experiences!);
             Assert.Single(result.Educations!);
             Assert.Single(result.Interests!);
@@ -76,26 +73,23 @@ namespace findjobnuAPI.Tests.Services
         public async Task UpdateAsync_UpdatesAllRelations()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var user = CreateUserProfile(context, "user2");
-            var profile = new WorkProfile
+            var profile = new Profile
             {
-                UserProfileId = user.Id,
-                UserProfile = user,
-                BasicInfo = new BasicInfo { Name = "Old" },
+                UserId = "user3",
+                BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" },
                 Experiences = new List<Experience> { new Experience { PositionTitle = "OldExp" } },
                 Educations = new List<Education> { new Education { Institution = "OldUni" } },
                 Interests = new List<Interest> { new Interest { Title = "OldInterest" } },
                 Accomplishments = new List<Accomplishment> { new Accomplishment { Title = "OldAcc" } },
                 Contacts = new List<Contact> { new Contact { Name = "OldContact" } }
             };
-            context.WorkProfiles.Add(profile);
+            context.Profiles.Add(profile);
             context.SaveChanges();
 
-            var updated = new WorkProfile
+            var updated = new Profile
             {
-                UserProfileId = user.Id,
-                UserProfile = user,
-                BasicInfo = new BasicInfo { Name = "New" },
+                UserId = "user3",
+                BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" },
                 Experiences = new List<Experience> { new Experience { PositionTitle = "NewExp" } },
                 Educations = new List<Education> { new Education { Institution = "NewUni" } },
                 Interests = new List<Interest> { new Interest { Title = "NewInterest" } },
@@ -103,19 +97,18 @@ namespace findjobnuAPI.Tests.Services
                 Contacts = new List<Contact> { new Contact { Name = "NewContact" } }
             };
 
-            var result = await service.UpdateAsync(profile.Id, updated, "user2");
+            var result = await service.UpdateAsync(profile.Id, updated, "user3");
             Assert.True(result);
 
-            var dbProfile = await context.WorkProfiles
-                .Include(wp => wp.Experiences)
-                .Include(wp => wp.Educations)
-                .Include(wp => wp.Interests)
-                .Include(wp => wp.Accomplishments)
-                .Include(wp => wp.Contacts)
-                .FirstOrDefaultAsync(wp => wp.Id == profile.Id);
+            var dbProfile = await context.Profiles
+                .Include(p => p.Experiences)
+                .Include(p => p.Educations)
+                .Include(p => p.Interests)
+                .Include(p => p.Accomplishments)
+                .Include(p => p.Contacts)
+                .FirstOrDefaultAsync(p => p.Id == profile.Id);
 
             Assert.NotNull(dbProfile);
-            Assert.Equal("New", dbProfile!.BasicInfo!.Name);
             Assert.Single(dbProfile.Experiences!);
             Assert.Equal("NewExp", dbProfile.Experiences!.First().PositionTitle);
             Assert.Single(dbProfile.Educations!);
@@ -129,45 +122,28 @@ namespace findjobnuAPI.Tests.Services
         }
 
         [Fact]
-        public async Task DeleteAsync_RemovesWorkProfile()
-        {
-            var service = GetServiceWithInMemoryDb(out var context);
-            var user = CreateUserProfile(context, "user3");
-            var profile = new WorkProfile { UserProfileId = user.Id, UserProfile = user, BasicInfo = new BasicInfo { Name = "ToDelete" } };
-            context.WorkProfiles.Add(profile);
-            context.SaveChanges();
-
-            var result = await service.DeleteAsync(profile.Id, "user3");
-            Assert.True(result);
-            Assert.Null(await context.WorkProfiles.FindAsync(profile.Id));
-        }
-
-        [Fact]
         public async Task UpdateAsync_ReturnsFalse_WhenNotFoundOrUnauthorized()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var user = CreateUserProfile(context, "user4");
-            var profile = new WorkProfile { UserProfileId = user.Id, UserProfile = user, BasicInfo = new BasicInfo { Name = "Test" } };
-            context.WorkProfiles.Add(profile);
+            var profile = new Profile { UserId = "user5", BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" } };
+            context.Profiles.Add(profile);
             context.SaveChanges();
 
-            var updated = new WorkProfile { UserProfileId = user.Id, UserProfile = user, BasicInfo = new BasicInfo { Name = "Updated" } };
-            var result = await service.UpdateAsync(999, updated, "user4");
+            var updated = new Profile { UserId = "user5", BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" } };
+            var result = await service.UpdateAsync(999, updated, "user5");
             Assert.False(result);
             result = await service.UpdateAsync(profile.Id, updated, "wronguser");
             Assert.False(result);
         }
 
         [Fact]
-        public async Task CreateAsync_AddsWorkProfileWithSkills()
+        public async Task CreateAsync_AddsProfileWithSkills()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var user = CreateUserProfile(context);
-            var profile = new WorkProfile
+            var profile = new Profile
             {
-                UserProfileId = user.Id,
-                UserProfile = user,
-                BasicInfo = new BasicInfo { Name = "Test" },
+                UserId = "user1",
+                BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" },
                 Skills = new List<Skill> { new Skill { Name = "C#", Proficiency = SkillProficiency.Expert } }
             };
 
@@ -183,31 +159,28 @@ namespace findjobnuAPI.Tests.Services
         public async Task UpdateAsync_UpdatesSkills()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var user = CreateUserProfile(context, "user5");
-            var profile = new WorkProfile
+            var profile = new Profile
             {
-                UserProfileId = user.Id,
-                UserProfile = user,
-                BasicInfo = new BasicInfo { Name = "Old" },
+                UserId = "user6",
+                BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" },
                 Skills = new List<Skill> { new Skill { Name = "Java", Proficiency = SkillProficiency.Beginner } }
             };
-            context.WorkProfiles.Add(profile);
+            context.Profiles.Add(profile);
             context.SaveChanges();
 
-            var updated = new WorkProfile
+            var updated = new Profile
             {
-                UserProfileId = user.Id,
-                UserProfile = user,
-                BasicInfo = new BasicInfo { Name = "New" },
+                UserId = "user6",
+                BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" },
                 Skills = new List<Skill> { new Skill { Name = "Python", Proficiency = SkillProficiency.Advanced } }
             };
 
-            var result = await service.UpdateAsync(profile.Id, updated, "user5");
+            var result = await service.UpdateAsync(profile.Id, updated, "user6");
             Assert.True(result);
 
-            var dbProfile = await context.WorkProfiles
-                .Include(wp => wp.Skills)
-                .FirstOrDefaultAsync(wp => wp.Id == profile.Id);
+            var dbProfile = await context.Profiles
+                .Include(p => p.Skills)
+                .FirstOrDefaultAsync(p => p.Id == profile.Id);
 
             Assert.NotNull(dbProfile);
             Assert.Single(dbProfile!.Skills!);

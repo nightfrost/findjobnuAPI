@@ -98,8 +98,8 @@ namespace findjobnuAPI.Tests.Services
             var job2 = new JobIndexPosts { JobID = 20, JobTitle = "QA", Categories = new List<Category> { itCategory }, JobLocation = "NY", Published = DateTime.UtcNow };
             context.JobIndexPosts.AddRange(job1, job2);
             // Add user with saved jobs
-            var user = new UserProfile { Id = 1, UserId = "userX", FirstName = "Test", LastName = "User", SavedJobPosts = new List<string> { "10", "20" } };
-            context.UserProfile.Add(user);
+            var user = new Profile { Id = 1, UserId = "userX", BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" }, SavedJobPosts = ["10", "20"] };
+            context.Profiles.Add(user);
             context.SaveChanges();
 
             var service = new JobIndexPostsService(context);
@@ -117,8 +117,8 @@ namespace findjobnuAPI.Tests.Services
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
             using var context = new FindjobnuContext(options);
-            var user = new UserProfile { Id = 2, UserId = "userY", FirstName = "Test", LastName = "User", SavedJobPosts = new List<string>() };
-            context.UserProfile.Add(user);
+            var user = new Profile { Id = 2, UserId = "userY", BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" }, SavedJobPosts = [] };
+            context.Profiles.Add(user);
             context.SaveChanges();
 
             var service = new JobIndexPostsService(context);
