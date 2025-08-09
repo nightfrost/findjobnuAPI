@@ -1,5 +1,4 @@
 using Xunit;
-using Moq;
 using findjobnuAPI.Services;
 using findjobnuAPI.Models;
 using findjobnuAPI.Repositories.Context;
@@ -9,68 +8,92 @@ using System.Collections.Generic;
 
 namespace findjobnuAPI.Tests.Services
 {
-    public class UserProfileServiceTests
+    public class ProfileServiceTests_User
     {
-        private UserProfileService GetServiceWithInMemoryDb(out FindjobnuContext context)
+        private ProfileService GetServiceWithInMemoryDb(out FindjobnuContext context)
         {
             var options = new DbContextOptionsBuilder<FindjobnuContext>()
                 .UseInMemoryDatabase(databaseName: "TestDb")
                 .Options;
             context = new FindjobnuContext(options);
-            return new UserProfileService(context);
+            return new ProfileService(context);
         }
 
         [Fact]
-        public async Task GetByIdAsync_ReturnsUserProfile_WhenExists()
+        public async Task GetByIdAsync_ReturnsProfile_WhenExists()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var user = new UserProfile { Id = 1, UserId = "user1", FirstName = "John", LastName = "Doe", Keywords = new List<string> { "developer", "csharp" } };
-            context.UserProfile.Add(user);
+            var profile = new Profile {
+                Id = 1,
+                UserId = "user1",
+                Keywords = new List<string> { "developer", "csharp" },
+                BasicInfo = new BasicInfo { FirstName = "John", LastName = "Doe" }
+            };
+            context.Profiles.Add(profile);
             await context.SaveChangesAsync();
 
             var result = await service.GetByUserIdAsync("user1");
 
             Assert.NotNull(result);
-            Assert.Equal("John", result!.FirstName);
+            Assert.Equal("John", result!.BasicInfo.FirstName);
             Assert.Contains("developer", result.Keywords);
         }
 
         [Fact]
-        public async Task CreateAsync_AddsUserProfile()
+        public async Task CreateAsync_AddsProfile()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var user = new UserProfile { UserId = "user2", FirstName = "Jane", LastName = "Smith", Keywords = new List<string> { "qa" } };
+            var profile = new Profile {
+                UserId = "user2",
+                Keywords = new List<string> { "qa" },
+                BasicInfo = new BasicInfo { FirstName = "Jane", LastName = "Smith" }
+            };
 
-            var result = await service.CreateAsync(user);
+            var result = await service.CreateAsync(profile);
 
             Assert.NotNull(result);
-            Assert.Equal("Jane", result!.FirstName);
+            Assert.Equal("Jane", result!.BasicInfo.FirstName);
             Assert.Contains("qa", result.Keywords);
         }
 
         [Fact]
-        public async Task UpdateAsync_UpdatesUserProfile_WhenUserIdMatches()
+        public async Task UpdateAsync_UpdatesProfile_WhenUserIdMatches()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var user = new UserProfile { Id = 2, UserId = "user3", FirstName = "Alice", LastName = "Brown", Keywords = new List<string> { "old" } };
-            context.UserProfile.Add(user);
+            var profile = new Profile {
+                Id = 2,
+                UserId = "user3",
+                Keywords = new List<string> { "old" },
+                BasicInfo = new BasicInfo { FirstName = "Alice", LastName = "Brown" }
+            };
+            context.Profiles.Add(profile);
             await context.SaveChangesAsync();
 
-            var updatedUser = new UserProfile { UserId = "user3", FirstName = "Alicia", LastName = "Brown", Keywords = new List<string> { "new" } };
-            var result = await service.UpdateAsync(2, updatedUser, "user3");
+            var updatedProfile = new Profile {
+                UserId = "user3",
+                Keywords = new List<string> { "new" },
+                BasicInfo = new BasicInfo { FirstName = "Alicia", LastName = "Brown" }
+            };
+            var result = await service.UpdateAsync(2, updatedProfile, "user3");
 
             Assert.True(result);
-            var dbUser = await context.UserProfile.FindAsync(2);
-            Assert.Equal("Alicia", dbUser!.FirstName);
-            Assert.Contains("new", dbUser.Keywords);
+            var dbProfile = await context.Profiles.FindAsync(2);
+            Assert.Equal("Alicia", dbProfile!.BasicInfo.FirstName);
+            Assert.Contains("new", dbProfile.Keywords);
         }
 
         [Fact]
         public async Task GetSavedJobsByUserIdAsync_ReturnsSavedJobs()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var user = new UserProfile { Id = 3, UserId = "user4", FirstName = "Bob", LastName = "Smith", SavedJobPosts = new List<string> { "1", "2" }, Keywords = new List<string> { "test" } };
-            context.UserProfile.Add(user);
+            var profile = new Profile {
+                Id = 3,
+                UserId = "user4",
+                SavedJobPosts = new List<string> { "1", "2" },
+                Keywords = new List<string> { "test" },
+                BasicInfo = new BasicInfo { FirstName = "Bob", LastName = "Smith" }
+            };
+            context.Profiles.Add(profile);
             await context.SaveChangesAsync();
 
             var result = await service.GetSavedJobsByUserIdAsync("user4");
@@ -94,22 +117,34 @@ namespace findjobnuAPI.Tests.Services
         public async Task SaveJobAsync_AddsJobToSavedList()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var user = new UserProfile { Id = 4, UserId = "user5", FirstName = "Eve", LastName = "Adams", SavedJobPosts = new List<string>(), Keywords = new List<string> { "save" } };
-            context.UserProfile.Add(user);
+            var profile = new Profile {
+                Id = 4,
+                UserId = "user5",
+                SavedJobPosts = new List<string>(),
+                Keywords = new List<string> { "save" },
+                BasicInfo = new BasicInfo { FirstName = "Eve", LastName = "Adams" }
+            };
+            context.Profiles.Add(profile);
             await context.SaveChangesAsync();
 
             var result = await service.SaveJobAsync("user5", "99");
             Assert.True(result);
-            var dbUser = await context.UserProfile.FirstOrDefaultAsync(u => u.UserId == "user5");
-            Assert.Contains("99", dbUser!.SavedJobPosts);
+            var dbProfile = await context.Profiles.FirstOrDefaultAsync(u => u.UserId == "user5");
+            Assert.Contains("99", dbProfile!.SavedJobPosts);
         }
 
         [Fact]
         public async Task SaveJobAsync_DoesNotAddDuplicateJob()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var user = new UserProfile { Id = 5, UserId = "user6", FirstName = "Sam", LastName = "Lee", SavedJobPosts = new List<string> { "100" }, Keywords = new List<string> { "dup" } };
-            context.UserProfile.Add(user);
+            var profile = new Profile {
+                Id = 5,
+                UserId = "user6",
+                SavedJobPosts = new List<string> { "100" },
+                Keywords = new List<string> { "dup" },
+                BasicInfo = new BasicInfo { FirstName = "Sam", LastName = "Lee" }
+            };
+            context.Profiles.Add(profile);
             await context.SaveChangesAsync();
 
             var result = await service.SaveJobAsync("user6", "100");
@@ -128,22 +163,34 @@ namespace findjobnuAPI.Tests.Services
         public async Task RemoveSavedJobAsync_RemovesJobFromSavedList()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var user = new UserProfile { Id = 6, UserId = "user7", FirstName = "Tom", LastName = "Jones", SavedJobPosts = new List<string> { "200" }, Keywords = new List<string> { "remove" } };
-            context.UserProfile.Add(user);
+            var profile = new Profile {
+                Id = 6,
+                UserId = "user7",
+                SavedJobPosts = new List<string> { "200" },
+                Keywords = new List<string> { "remove" },
+                BasicInfo = new BasicInfo { FirstName = "Tom", LastName = "Jones" }
+            };
+            context.Profiles.Add(profile);
             await context.SaveChangesAsync();
 
             var result = await service.RemoveSavedJobAsync("user7", "200");
             Assert.True(result);
-            var dbUser = await context.UserProfile.FirstOrDefaultAsync(u => u.UserId == "user7");
-            Assert.DoesNotContain("200", dbUser!.SavedJobPosts);
+            var dbProfile = await context.Profiles.FirstOrDefaultAsync(u => u.UserId == "user7");
+            Assert.DoesNotContain("200", dbProfile!.SavedJobPosts);
         }
 
         [Fact]
         public async Task RemoveSavedJobAsync_ReturnsFalse_WhenJobNotInList()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var user = new UserProfile { Id = 8, UserId = "user8", FirstName = "Ann", LastName = "White", SavedJobPosts = new List<string> { "300" }, Keywords = new List<string> { "notfound" } };
-            context.UserProfile.Add(user);
+            var profile = new Profile {
+                Id = 8,
+                UserId = "user8",
+                SavedJobPosts = new List<string> { "300" },
+                Keywords = new List<string> { "notfound" },
+                BasicInfo = new BasicInfo { FirstName = "Ann", LastName = "White" }
+            };
+            context.Profiles.Add(profile);
             await context.SaveChangesAsync();
 
             var result = await service.RemoveSavedJobAsync("user8", "999");

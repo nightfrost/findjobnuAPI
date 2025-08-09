@@ -11,9 +11,8 @@ namespace findjobnuAPI.Repositories.Context
     {
         public DbSet<JobIndexPosts> JobIndexPosts { get; set; }
         public DbSet<Category> Categories { get; set; }
-        public DbSet<Cities> Companies { get; set; }
-        public DbSet<UserProfile> UserProfile { get; set; }
-        public DbSet<WorkProfile> WorkProfiles { get; set; }
+        public DbSet<Cities> Cities { get; set; }
+        public DbSet<Profile> Profiles { get; set; }
         public DbSet<Experience> Experiences { get; set; }
         public DbSet<Education> Educations { get; set; }
         public DbSet<Interest> Interests { get; set; }
@@ -27,36 +26,23 @@ namespace findjobnuAPI.Repositories.Context
             modelBuilder.Entity<JobIndexPosts>().ToTable("JobIndexPostingsExtended").HasKey(s => s.JobID);
             modelBuilder.Entity<JobIndexPosts>().HasIndex(s => s.JobUrl).IsUnique();
             modelBuilder.Entity<Cities>().ToTable("Cities").HasKey(s => s.Id);
-            modelBuilder.Entity<UserProfile>().HasKey(up => up.Id);
-
-            modelBuilder.Entity<UserProfile>()
-                .Property(up => up.FirstName)
-                .IsRequired()
-                .HasMaxLength(50);
-            modelBuilder.Entity<UserProfile>()
-                .Property(up => up.LastName)
-                .IsRequired()
-                .HasMaxLength(100);
-            modelBuilder.Entity<UserProfile>()
-                .Property(up => up.PhoneNumber)
-                .HasMaxLength(100);
-            modelBuilder.Entity<UserProfile>()
-                .HasIndex(up => up.UserId)
+            modelBuilder.Entity<Profile>().HasKey(p => p.Id);
+            modelBuilder.Entity<Profile>()
+                .HasIndex(p => p.UserId)
                 .IsUnique();
 
-            // Use comma-separated serialization and value comparer for Keywords
-            var keywordsConverter = new ValueConverter<List<string>, string>(
+            var keywordsConverter = new ValueConverter<List<string>?, string>(
                 v => v == null ? null : string.Join(",", v),
                 v => string.IsNullOrWhiteSpace(v) ? new List<string>() : v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList()
             );
-            var keywordsComparer = new ValueComparer<List<string>>(
+            var keywordsComparer = new ValueComparer<List<string>?>(
                 (c1, c2) => (c1 == null && c2 == null) || (c1 != null && c2 != null && c1.SequenceEqual(c2)),
                 c => c == null ? 0 : c.Aggregate(0, (a, v) => HashCode.Combine(a, v != null ? v.GetHashCode() : 0)),
                 c => c == null ? null : c.ToList()
             );
 
-            modelBuilder.Entity<UserProfile>()
-                .Property(up => up.Keywords)
+            modelBuilder.Entity<Profile>()
+                .Property(p => p.Keywords)
                 .HasConversion(keywordsConverter)
                 .Metadata.SetValueComparer(keywordsComparer);
             modelBuilder.Entity<JobIndexPosts>()
@@ -79,46 +65,43 @@ namespace findjobnuAPI.Repositories.Context
                     }
                 );
 
-            // WorkProfile relationships (renamed from LinkedInProfile)
-            modelBuilder.Entity<WorkProfile>()
-                .OwnsOne(l => l.BasicInfo);
-            modelBuilder.Entity<WorkProfile>()
-                .HasMany(l => l.Experiences)
-                .WithOne(e => e.WorkProfile)
-                .HasForeignKey(e => e.WorkProfileId)
+            // Profile relationships
+            modelBuilder.Entity<Profile>()
+                .OwnsOne(p => p.BasicInfo, b =>
+                {
+                    b.Property(bi => bi.FirstName).IsRequired().HasMaxLength(50);
+                    b.Property(bi => bi.LastName).IsRequired().HasMaxLength(100);
+                    b.Property(bi => bi.PhoneNumber).HasMaxLength(100);
+                });
+            modelBuilder.Entity<Profile>()
+                .HasMany(p => p.Experiences)
+                .WithOne(e => e.Profile)
+                .HasForeignKey(e => e.ProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<WorkProfile>()
-                .HasMany(l => l.Educations)
-                .WithOne(e => e.WorkProfile)
-                .HasForeignKey(e => e.WorkProfileId)
+            modelBuilder.Entity<Profile>()
+                .HasMany(p => p.Educations)
+                .WithOne(e => e.Profile)
+                .HasForeignKey(e => e.ProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<WorkProfile>()
-                .HasMany(l => l.Interests)
-                .WithOne(e => e.WorkProfile)
-                .HasForeignKey(e => e.WorkProfileId)
+            modelBuilder.Entity<Profile>()
+                .HasMany(p => p.Interests)
+                .WithOne(e => e.Profile)
+                .HasForeignKey(e => e.ProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<WorkProfile>()
-                .HasMany(l => l.Accomplishments)
-                .WithOne(e => e.WorkProfile)
-                .HasForeignKey(e => e.WorkProfileId)
+            modelBuilder.Entity<Profile>()
+                .HasMany(p => p.Accomplishments)
+                .WithOne(e => e.Profile)
+                .HasForeignKey(e => e.ProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<WorkProfile>()
-                .HasMany(l => l.Contacts)
-                .WithOne(e => e.WorkProfile)
-                .HasForeignKey(e => e.WorkProfileId)
+            modelBuilder.Entity<Profile>()
+                .HasMany(p => p.Contacts)
+                .WithOne(e => e.Profile)
+                .HasForeignKey(e => e.ProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<WorkProfile>()
-                .HasMany(l => l.Skills)
-                .WithOne(e => e.WorkProfile)
-                .HasForeignKey(e => e.WorkProfileId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // WorkProfile <-> UserProfile (required one-to-one)
-            modelBuilder.Entity<WorkProfile>()
-                .HasOne(l => l.UserProfile)
-                .WithOne()
-                .HasForeignKey<WorkProfile>(l => l.UserProfileId)
-                .IsRequired()
+            modelBuilder.Entity<Profile>()
+                .HasMany(p => p.Skills)
+                .WithOne(e => e.Profile)
+                .HasForeignKey(e => e.ProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }

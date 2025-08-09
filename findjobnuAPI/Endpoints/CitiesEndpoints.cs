@@ -13,14 +13,14 @@ public static class CitiesEndpoints
 
         group.MapGet("/", async (FindjobnuContext db) =>
         {
-            return await db.Companies.ToListAsync();
+            return await db.Cities.ToListAsync();
         })
         .WithName("GetAllCities")
         .WithOpenApi();
 
         group.MapGet("/{id}", async Task<Results<Ok<Cities>, NoContent>> (int id, FindjobnuContext db) =>
         {
-            return await db.Companies.AsNoTracking()
+            return await db.Cities.AsNoTracking()
                 .FirstOrDefaultAsync(model => model.Id == id)
                 is Cities model
                     ? TypedResults.Ok(model)
@@ -31,7 +31,7 @@ public static class CitiesEndpoints
 
         group.MapGet("/search", async Task<Results<Ok<List<Cities>>, NoContent>> (string query, FindjobnuContext db) =>
         {
-            var results = await db.Companies.AsNoTracking()
+            var results = await db.Cities.AsNoTracking()
                 .Where(model => model.CityName.Contains(query))
                 .ToListAsync();
 

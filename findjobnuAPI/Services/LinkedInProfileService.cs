@@ -154,11 +154,11 @@ namespace findjobnuAPI.Services
             }
         }
 
-        public async Task<bool> SaveProfileAsync(string userid, WorkProfile workProfile)
+        public async Task<bool> SaveProfileAsync(string userid, Profile profile)
         {
             try
             {
-                await _context.WorkProfiles.AddAsync(workProfile);
+                await _context.Profiles.AddAsync(profile);
                 var result = await _context.SaveChangesAsync();
                 return result > 0;
             }
