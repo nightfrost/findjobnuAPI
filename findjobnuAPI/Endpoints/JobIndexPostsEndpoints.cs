@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
+using findjobnuAPI.DTOs;
 
 namespace findjobnuAPI.Endpoints;
 
@@ -81,16 +82,13 @@ public static class JobIndexPostsEndpoints
             [FromQuery] int page, 
             HttpContext httpContext, 
             [FromServices] IJobIndexPostsService jobService, 
-            [FromServices] IProfileService profileService) =>
+            [FromServices] IProfileService profileService ) =>
         {
             var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return TypedResults.Unauthorized();
-            var profile = await profileService.GetByUserIdAsync(userId);
-            if (profile == null)
-                return TypedResults.BadRequest("No Profile setup.");
 
-            var pagedList = await jobService.GetRecommendedJobsByUserAndProfile(profile, page);
+            var pagedList = await jobService.GetRecommendedJobsByUserAndProfile(userId, page);
             return pagedList?.Items.Any() == true ? TypedResults.Ok(pagedList) :
                 TypedResults.NoContent();
         })

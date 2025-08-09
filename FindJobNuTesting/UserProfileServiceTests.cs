@@ -5,6 +5,7 @@ using findjobnuAPI.Repositories.Context;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Moq;
 
 namespace findjobnuAPI.Tests.Services
 {
@@ -16,7 +17,8 @@ namespace findjobnuAPI.Tests.Services
                 .UseInMemoryDatabase(databaseName: "TestDb")
                 .Options;
             context = new FindjobnuContext(options);
-            return new ProfileService(context);
+            var jobServiceMock = new Mock<IJobIndexPostsService>();
+            return new ProfileService(context, jobServiceMock.Object);
         }
 
         [Fact]
@@ -93,15 +95,26 @@ namespace findjobnuAPI.Tests.Services
                 Keywords = new List<string> { "test" },
                 BasicInfo = new BasicInfo { FirstName = "Bob", LastName = "Smith" }
             };
+            var job1 = new JobIndexPosts
+            {
+                JobID = 1,
+                JobDescription = "Job1"
+            };
+            var job2 = new JobIndexPosts
+            {
+                JobID = 2,
+                JobDescription = "Job2"
+            };
+            context.JobIndexPosts.AddRange(job1, job2);
             context.Profiles.Add(profile);
             await context.SaveChangesAsync();
 
             var result = await service.GetSavedJobsByUserIdAsync("user4");
 
             Assert.NotNull(result);
-            Assert.Equal(2, result.Count);
-            Assert.Contains("1", result);
-            Assert.Contains("2", result);
+            Assert.Equal(2, result.Items.Count());
+            Assert.Contains(result.Items, j => j.JobID.ToString() == "1");
+            Assert.Contains(result.Items, j => j.JobID.ToString() == "2");
         }
 
         [Fact]
@@ -110,7 +123,7 @@ namespace findjobnuAPI.Tests.Services
             var service = GetServiceWithInMemoryDb(out var context);
             var result = await service.GetSavedJobsByUserIdAsync("no_user");
             Assert.NotNull(result);
-            Assert.Empty(result);
+            Assert.Empty(result.Items);
         }
 
         [Fact]

@@ -82,7 +82,8 @@ namespace findjobnuAPI.Services
             try
             {
                 var categoryJobCounts = await _db.Categories
-                    .Select(c => new {
+                    .Select(c => new
+                    {
                         c.Name,
                         NumberOfJobs = c.JobIndexPosts.Count()
                     })
@@ -114,22 +115,33 @@ namespace findjobnuAPI.Services
             return new PagedList<JobIndexPosts>(jobs.Count, 10, page, jobs);
         }
 
-        public async Task<PagedList<JobIndexPosts>> GetRecommendedJobsByUserAndProfile(Profile profile, int page)
+        public async Task<PagedList<JobIndexPosts>> GetRecommendedJobsByUserAndProfile(string userId, int page)
         {
             int pagesize = 20;
 
-            //verify that profile has atleast 1 reference to relevant data
+            var profile = await _db.Profiles
+                .Include(p => p.BasicInfo)
+                .Include(p => p.Experiences)
+                .Include(p => p.Educations)
+                .Include(p => p.Interests)
+                .Include(p => p.Accomplishments)
+                .Include(p => p.Contacts)
+                .Include(p => p.Skills)
+                .FirstOrDefaultAsync(x => x.UserId == userId);
+            if (profile == null)
+                return new PagedList<JobIndexPosts>(0, pagesize, page, []);
+
             if ((profile.Keywords == null || profile.Keywords.Count == 0)
                 && (profile.Experiences == null || profile.Experiences.Count == 0)
                 && (profile.Interests == null || profile.Interests.Count == 0)
                 && (profile.BasicInfo == null || profile.BasicInfo.JobTitle.IsNullOrEmpty()))
-                return new PagedList<JobIndexPosts>(0, pagesize, page, []);
+                    return new PagedList<JobIndexPosts>(0, pagesize, page, []);
 
             var keywords = GetKeywordsFromProfile(profile);
 
             var baseQuery = _db.JobIndexPosts
                 .Include(j => j.Categories)
-                .Where(j => (j.Keywords != null && j.Keywords.Any(k => keywords.Contains(k))) 
+                .Where(j => (j.Keywords != null && j.Keywords.Any(k => keywords.Contains(k)))
                 || (j.CompanyName != null && keywords.Contains(j.CompanyName))
                 || (j.JobTitle != null && keywords.Contains(j.JobTitle)))
                 .AsNoTracking();
