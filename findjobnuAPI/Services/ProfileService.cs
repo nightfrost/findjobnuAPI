@@ -1,5 +1,6 @@
 using findjobnuAPI.Models;
 using findjobnuAPI.Repositories.Context;
+using findjobnuAPI.DTOs;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -8,18 +9,14 @@ using System.Threading.Tasks;
 
 namespace findjobnuAPI.Services
 {
-    public class ProfileService : IProfileService
+    public class ProfileService(FindjobnuContext db, IJobIndexPostsService jobService) : IProfileService
     {
-        private readonly FindjobnuContext _db;
+        private readonly FindjobnuContext _db = db;
+        private readonly IJobIndexPostsService _jobService = jobService;
 
-        public ProfileService(FindjobnuContext db)
+        public async Task<ProfileDto?> GetByUserIdAsync(string userId)
         {
-            _db = db;
-        }
-
-        public async Task<Profile?> GetByUserIdAsync(string userId)
-        {
-            return await _db.Profiles
+            var profile = await _db.Profiles
                 .Include(p => p.BasicInfo)
                 .Include(p => p.Experiences)
                 .Include(p => p.Educations)
@@ -29,6 +26,77 @@ namespace findjobnuAPI.Services
                 .Include(p => p.Skills)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.UserId == userId);
+            if (profile == null) return null;
+            if (profile.BasicInfo == null) profile.BasicInfo = new BasicInfo();
+
+            return new ProfileDto
+            {
+                Id = profile.Id,
+                UserId = profile.UserId,
+                LastUpdatedAt = profile.LastUpdatedAt,
+                CreatedAt = profile.CreatedAt,
+                SavedJobPosts = profile.SavedJobPosts,
+                Keywords = profile.Keywords,
+                BasicInfo = new BasicInfoDto
+                {
+                    FirstName = profile.BasicInfo.FirstName,
+                    LastName = profile.BasicInfo.LastName,
+                    DateOfBirth = profile.BasicInfo.DateOfBirth,
+                    PhoneNumber = profile.BasicInfo.PhoneNumber,
+                    About = profile.BasicInfo.About,
+                    Location = profile.BasicInfo.Location,
+                    Company = profile.BasicInfo.Company,
+                    JobTitle = profile.BasicInfo.JobTitle,
+                    LinkedinUrl = profile.BasicInfo.LinkedinUrl,
+                    OpenToWork = profile.BasicInfo.OpenToWork
+                },
+                Experiences = profile.Experiences?.Select(e => new ExperienceDto
+                {
+                    Id = e.Id,
+                    PositionTitle = e.PositionTitle,
+                    Company = e.Company,
+                    FromDate = e.FromDate,
+                    ToDate = e.ToDate,
+                    Duration = e.Duration,
+                    Location = e.Location,
+                    Description = e.Description,
+                    LinkedinUrl = e.LinkedinUrl
+                }).ToList(),
+                Educations = profile.Educations?.Select(e => new EducationDto
+                {
+                    Id = e.Id,
+                    Institution = e.Institution,
+                    Degree = e.Degree,
+                    FromDate = e.FromDate,
+                    ToDate = e.ToDate,
+                    Description = e.Description,
+                    LinkedinUrl = e.LinkedinUrl
+                }).ToList(),
+                Interests = profile.Interests?.Select(i => new InterestDto
+                {
+                    Id = i.Id,
+                    Title = i.Title
+                }).ToList(),
+                Accomplishments = profile.Accomplishments?.Select(a => new AccomplishmentDto
+                {
+                    Id = a.Id,
+                    Category = a.Category,
+                    Title = a.Title
+                }).ToList(),
+                Contacts = profile.Contacts?.Select(c => new ContactDto
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Occupation = c.Occupation,
+                    Url = c.Url
+                }).ToList(),
+                Skills = profile.Skills?.Select(s => new SkillDto
+                {
+                    Id = s.Id,
+                    Name = s.Name,
+                    Proficiency = (int)s.Proficiency
+                }).ToList()
+            };
         }
 
         public async Task<Profile?> CreateAsync(Profile profile)
@@ -127,16 +195,28 @@ namespace findjobnuAPI.Services
             return true;
         }
 
-        public async Task<List<string>> GetSavedJobsByUserIdAsync(string userId)
+        public async Task<PagedList<JobIndexPosts>> GetSavedJobsByUserIdAsync(string userId, int page = 1)
         {
-            var profile = await _db.Profiles
+            int pagesize = 20;
+
+            var profile = await _db.Profiles.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId);
+            if (profile == null || profile.SavedJobPosts == null || profile.SavedJobPosts.Count == 0)
+                return new PagedList<JobIndexPosts>(0, pagesize, page, []);
+
+            var jobIds = profile.SavedJobPosts
+                .Select(id => int.TryParse(id, out var jid) ? jid : (int?)null)
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToHashSet();
+
+            if (jobIds.Count == 0)
+                return new PagedList<JobIndexPosts>(0, pagesize, page, []);
+
+            var jobs = await _db.JobIndexPosts
+                .Where(j => jobIds.Contains(j.JobID))
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.UserId == userId);
-            if (profile == null)
-            {
-                return new List<string>();
-            }
-            return profile.SavedJobPosts ?? new List<string>();
+                .ToListAsync();
+            return new PagedList<JobIndexPosts>(jobs.Count, pagesize, page, jobs);
         }
 
         public async Task<bool> SaveJobAsync(string userId, string jobId)
@@ -149,7 +229,7 @@ namespace findjobnuAPI.Services
             }
             if (profile.SavedJobPosts == null)
             {
-                profile.SavedJobPosts = new List<string>();
+                profile.SavedJobPosts = [];
             }
             if (!profile.SavedJobPosts.Contains(jobId))
             {
@@ -173,6 +253,115 @@ namespace findjobnuAPI.Services
                 return true;
             }
             return false;
+        }
+
+        // Generic helper for single navigation property (e.g., BasicInfo)
+        private async Task<TDto?> GetProfileSingleDataByUserIdAsync<TProperty, TDto>(
+            string userId,
+            System.Linq.Expressions.Expression<Func<Profile, TProperty>> includeExpression,
+            Func<Profile, TProperty?> selector,
+            Func<TProperty, TDto> mapFunc)
+            where TProperty : class
+        {
+            var profile = await _db.Profiles
+                .Include(includeExpression)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.UserId == userId);
+            var property = profile == null ? null : selector(profile);
+            if (property == null)
+                return default;
+            return mapFunc(property);
+        }
+
+        // Generic helper for collection navigation property (e.g., Experiences, Skills, Educations)
+        private async Task<List<TDto>> GetProfileCollectionDataByUserIdAsync<TProperty, TDto>(
+            string userId,
+            System.Linq.Expressions.Expression<Func<Profile, IEnumerable<TProperty>>> includeExpression,
+            Func<Profile, IEnumerable<TProperty>?> selector,
+            Func<TProperty, TDto> mapFunc)
+            where TProperty : class
+        {
+            var profile = await _db.Profiles
+                .Include(includeExpression)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.UserId == userId);
+            var collection = profile == null ? null : selector(profile);
+            if (collection == null)
+                return [];
+            return collection.Select(mapFunc).ToList();
+        }
+
+        public Task<BasicInfoDto?> GetProfileBasicInfoByUserIdAsync(string userId)
+        {
+            return GetProfileSingleDataByUserIdAsync(
+                userId,
+                p => p.BasicInfo,
+                p => p.BasicInfo,
+                b => new BasicInfoDto
+                {
+                    FirstName = b.FirstName,
+                    LastName = b.LastName,
+                    DateOfBirth = b.DateOfBirth,
+                    PhoneNumber = b.PhoneNumber,
+                    About = b.About,
+                    Location = b.Location,
+                    Company = b.Company,
+                    JobTitle = b.JobTitle,
+                    LinkedinUrl = b.LinkedinUrl,
+                    OpenToWork = b.OpenToWork
+                });
+        }
+
+        public Task<List<ExperienceDto>> GetProfileExperienceByUserIdAsync(string userId)
+        {
+            return GetProfileCollectionDataByUserIdAsync(
+                userId,
+                p => p.Experiences,
+                p => p.Experiences,
+                e => new ExperienceDto
+                {
+                    Id = e.Id,
+                    PositionTitle = e.PositionTitle,
+                    Company = e.Company,
+                    FromDate = e.FromDate,
+                    ToDate = e.ToDate,
+                    Duration = e.Duration,
+                    Location = e.Location,
+                    Description = e.Description,
+                    LinkedinUrl = e.LinkedinUrl
+                });
+        }
+
+        public Task<List<SkillDto>> GetProfileSkillsByUserIdAsync(string userId)
+        {
+            return GetProfileCollectionDataByUserIdAsync(
+                userId,
+                p => p.Skills,
+                p => p.Skills,
+                s => new SkillDto
+                {
+                    Id = s.Id,
+                    Name = s.Name,
+                    Proficiency = (int)s.Proficiency
+                });
+        }
+
+        public Task<List<EducationDto>> GetProfileEducationByUserIdAsync(string userId)
+        {
+            return GetProfileCollectionDataByUserIdAsync(
+                userId,
+                p => p.Educations,
+                p => p.Educations,
+                e => new EducationDto
+                {
+                    Id = e.Id,
+                    Institution = e.Institution,
+                    Degree = e.Degree,
+                    FromDate = e.FromDate,
+                    ToDate = e.ToDate,
+                    Description = e.Description,
+                    LinkedinUrl = e.LinkedinUrl
+                });
         }
     }
 }
