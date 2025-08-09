@@ -28,7 +28,7 @@ namespace findjobnuAPI.DTOs
         public string? Company { get; set; }
         public string? JobTitle { get; set; }
         public string? LinkedinUrl { get; set; }
-        public bool? OpenToWork { get; set; }
+        public bool OpenToWork { get; set; } = false;
     }
 
     public class ExperienceDto
