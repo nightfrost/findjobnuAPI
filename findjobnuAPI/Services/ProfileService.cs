@@ -253,86 +253,113 @@ namespace findjobnuAPI.Services
             return false;
         }
 
-        public async Task<BasicInfoDto?> GetProfileBasicInfoByUserIdAsync(string userId)
+        // Generic helper for single navigation property (e.g., BasicInfo)
+        private async Task<TDto?> GetProfileSingleDataByUserIdAsync<TProperty, TDto>(
+            string userId,
+            System.Linq.Expressions.Expression<Func<Profile, TProperty>> includeExpression,
+            Func<Profile, TProperty?> selector,
+            Func<TProperty, TDto> mapFunc)
+            where TProperty : class
         {
             var profile = await _db.Profiles
-                .Include(p => p.BasicInfo)
+                .Include(includeExpression)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.UserId == userId);
-            if (profile == null || profile.BasicInfo == null)
-                return null;
-            var b = profile.BasicInfo;
-            return new BasicInfoDto
-            {
-                FirstName = b.FirstName,
-                LastName = b.LastName,
-                DateOfBirth = b.DateOfBirth,
-                PhoneNumber = b.PhoneNumber,
-                About = b.About,
-                Location = b.Location,
-                Company = b.Company,
-                JobTitle = b.JobTitle,
-                LinkedinUrl = b.LinkedinUrl,
-                OpenToWork = b.OpenToWork
-            };
+            var property = profile == null ? null : selector(profile);
+            if (property == null)
+                return default;
+            return mapFunc(property);
         }
 
-        public async Task<List<ExperienceDto>> GetProfileExperienceByUserIdAsync(string userId)
+        // Generic helper for collection navigation property (e.g., Experiences, Skills, Educations)
+        private async Task<List<TDto>> GetProfileCollectionDataByUserIdAsync<TProperty, TDto>(
+            string userId,
+            System.Linq.Expressions.Expression<Func<Profile, IEnumerable<TProperty>>> includeExpression,
+            Func<Profile, IEnumerable<TProperty>?> selector,
+            Func<TProperty, TDto> mapFunc)
+            where TProperty : class
         {
             var profile = await _db.Profiles
-                .Include(p => p.Experiences)
+                .Include(includeExpression)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.UserId == userId);
-            if (profile == null || profile.Experiences == null)
+            var collection = profile == null ? null : selector(profile);
+            if (collection == null)
                 return [];
-            return profile.Experiences.Select(e => new ExperienceDto
-            {
-                Id = e.Id,
-                PositionTitle = e.PositionTitle,
-                Company = e.Company,
-                FromDate = e.FromDate,
-                ToDate = e.ToDate,
-                Duration = e.Duration,
-                Location = e.Location,
-                Description = e.Description,
-                LinkedinUrl = e.LinkedinUrl
-            }).ToList();
+            return collection.Select(mapFunc).ToList();
         }
 
-        public async Task<List<SkillDto>> GetProfileSkillsByUserIdAsync(string userId)
+        public Task<BasicInfoDto?> GetProfileBasicInfoByUserIdAsync(string userId)
         {
-            var profile = await _db.Profiles
-                .Include(p => p.Skills)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.UserId == userId);
-            if (profile == null || profile.Skills == null)
-                return [];
-            return profile.Skills.Select(s => new SkillDto
-            {
-                Id = s.Id,
-                Name = s.Name,
-                Proficiency = (int)s.Proficiency
-            }).ToList();
+            return GetProfileSingleDataByUserIdAsync(
+                userId,
+                p => p.BasicInfo,
+                p => p.BasicInfo,
+                b => new BasicInfoDto
+                {
+                    FirstName = b.FirstName,
+                    LastName = b.LastName,
+                    DateOfBirth = b.DateOfBirth,
+                    PhoneNumber = b.PhoneNumber,
+                    About = b.About,
+                    Location = b.Location,
+                    Company = b.Company,
+                    JobTitle = b.JobTitle,
+                    LinkedinUrl = b.LinkedinUrl,
+                    OpenToWork = b.OpenToWork
+                });
         }
 
-        public async Task<List<EducationDto>> GetProfileEducationByUserIdAsync(string userId)
+        public Task<List<ExperienceDto>> GetProfileExperienceByUserIdAsync(string userId)
         {
-            var profile = await _db.Profiles
-                .Include(p => p.Educations)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.UserId == userId);
-            if (profile == null || profile.Educations == null)
-                return [];
-            return profile.Educations.Select(e => new EducationDto
-            {
-                Id = e.Id,
-                Institution = e.Institution,
-                Degree = e.Degree,
-                FromDate = e.FromDate,
-                ToDate = e.ToDate,
-                Description = e.Description,
-                LinkedinUrl = e.LinkedinUrl
-            }).ToList();
+            return GetProfileCollectionDataByUserIdAsync(
+                userId,
+                p => p.Experiences,
+                p => p.Experiences,
+                e => new ExperienceDto
+                {
+                    Id = e.Id,
+                    PositionTitle = e.PositionTitle,
+                    Company = e.Company,
+                    FromDate = e.FromDate,
+                    ToDate = e.ToDate,
+                    Duration = e.Duration,
+                    Location = e.Location,
+                    Description = e.Description,
+                    LinkedinUrl = e.LinkedinUrl
+                });
+        }
+
+        public Task<List<SkillDto>> GetProfileSkillsByUserIdAsync(string userId)
+        {
+            return GetProfileCollectionDataByUserIdAsync(
+                userId,
+                p => p.Skills,
+                p => p.Skills,
+                s => new SkillDto
+                {
+                    Id = s.Id,
+                    Name = s.Name,
+                    Proficiency = (int)s.Proficiency
+                });
+        }
+
+        public Task<List<EducationDto>> GetProfileEducationByUserIdAsync(string userId)
+        {
+            return GetProfileCollectionDataByUserIdAsync(
+                userId,
+                p => p.Educations,
+                p => p.Educations,
+                e => new EducationDto
+                {
+                    Id = e.Id,
+                    Institution = e.Institution,
+                    Degree = e.Degree,
+                    FromDate = e.FromDate,
+                    ToDate = e.ToDate,
+                    Description = e.Description,
+                    LinkedinUrl = e.LinkedinUrl
+                });
         }
     }
 }
