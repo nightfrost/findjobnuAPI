@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using Moq;
 
 namespace findjobnuAPI.Tests.Services
 {
@@ -17,7 +18,8 @@ namespace findjobnuAPI.Tests.Services
                 .UseInMemoryDatabase(databaseName: System.Guid.NewGuid().ToString())
                 .Options;
             context = new FindjobnuContext(options);
-            return new ProfileService(context);
+            var jobServiceMock = new Mock<IJobIndexPostsService>();
+            return new ProfileService(context, jobServiceMock.Object);
         }
 
         private Profile CreateProfile(FindjobnuContext context, string userId = "user1")

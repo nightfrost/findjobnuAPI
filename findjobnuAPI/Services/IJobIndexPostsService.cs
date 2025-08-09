@@ -10,6 +10,6 @@ namespace findjobnuAPI.Services
         Task<JobIndexPosts> GetByIdAsync(int id);
         Task<CategoriesResponse> GetCategoriesAsync();
         Task<PagedList<JobIndexPosts>> GetSavedJobsByUserId(string userid, int page);
-        Task<PagedList<JobIndexPosts>> GetRecommendedJobsByUserAndProfile(Profile profile, int page);
+        Task<PagedList<JobIndexPosts>> GetRecommendedJobsByUserAndProfile(string userId, int page);
     }
 }
