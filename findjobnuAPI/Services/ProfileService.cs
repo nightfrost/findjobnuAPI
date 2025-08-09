@@ -27,6 +27,8 @@ namespace findjobnuAPI.Services
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.UserId == userId);
             if (profile == null) return null;
+            if (profile.BasicInfo == null) profile.BasicInfo = new BasicInfo();
+
             return new ProfileDto
             {
                 Id = profile.Id,
