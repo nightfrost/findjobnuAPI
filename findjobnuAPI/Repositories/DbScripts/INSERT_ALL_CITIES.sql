@@ -1,153 +1,281 @@
-DELETE FROM Cities
-
-INSERT INTO Cities (CityName) VALUES ('Gribskov');
-INSERT INTO Cities (CityName) VALUES ('Helsingør');
-INSERT INTO Cities (CityName) VALUES ('Fredensborg');
-INSERT INTO Cities (CityName) VALUES ('Halsnæs');
-INSERT INTO Cities (CityName) VALUES ('Rudersdal');
-INSERT INTO Cities (CityName) VALUES ('Egedal');
-INSERT INTO Cities (CityName) VALUES ('Hillerød');
-INSERT INTO Cities (CityName) VALUES ('Frederikssund');
-INSERT INTO Cities (CityName) VALUES ('Allerød');
-INSERT INTO Cities (CityName) VALUES ('Furesø');
-INSERT INTO Cities (CityName) VALUES ('Hørsholm');
-INSERT INTO Cities (CityName) VALUES ('Ballerup');
-INSERT INTO Cities (CityName) VALUES ('Albertslund');
-INSERT INTO Cities (CityName) VALUES ('Glostrup');
-INSERT INTO Cities (CityName) VALUES ('Rødovre');
-INSERT INTO Cities (CityName) VALUES ('Herlev');
-INSERT INTO Cities (CityName) VALUES ('Gladsaxe');
-INSERT INTO Cities (CityName) VALUES ('Lyngby-Taarbæk');
-INSERT INTO Cities (CityName) VALUES ('Gentofte');
-INSERT INTO Cities (CityName) VALUES ('Høje Taastrup');
-INSERT INTO Cities (CityName) VALUES ('Ishøj');
-INSERT INTO Cities (CityName) VALUES ('Vallensbæk');
-INSERT INTO Cities (CityName) VALUES ('Brøndby');
-INSERT INTO Cities (CityName) VALUES ('Hvidovre');
-INSERT INTO Cities (CityName) VALUES ('Frederiksberg');
-INSERT INTO Cities (CityName) VALUES ('København');
-INSERT INTO Cities (CityName) VALUES ('Tårnby');
-INSERT INTO Cities (CityName) VALUES ('Dragør');
-INSERT INTO Cities (CityName) VALUES ('Bornholm');
-INSERT INTO Cities (CityName) VALUES ('Aarhus');
-INSERT INTO Cities (CityName) VALUES ('Odense');
-INSERT INTO Cities (CityName) VALUES ('Aalborg');
-INSERT INTO Cities (CityName) VALUES ('Esbjerg');
-INSERT INTO Cities (CityName) VALUES ('Randers');
-INSERT INTO Cities (CityName) VALUES ('Horsens');
-INSERT INTO Cities (CityName) VALUES ('Kolding');
-INSERT INTO Cities (CityName) VALUES ('Vejle');
-INSERT INTO Cities (CityName) VALUES ('Roskilde');
-INSERT INTO Cities (CityName) VALUES ('Herning');
-INSERT INTO Cities (CityName) VALUES ('Silkeborg');
-INSERT INTO Cities (CityName) VALUES ('Hørsholm');
-INSERT INTO Cities (CityName) VALUES ('Helsingør');
-INSERT INTO Cities (CityName) VALUES ('Næstved');
-INSERT INTO Cities (CityName) VALUES ('Viborg');
-INSERT INTO Cities (CityName) VALUES ('Fredericia');
-INSERT INTO Cities (CityName) VALUES ('Køge');
-INSERT INTO Cities (CityName) VALUES ('Holstebro');
-INSERT INTO Cities (CityName) VALUES ('Taastrup');
-INSERT INTO Cities (CityName) VALUES ('Hillerød');
-INSERT INTO Cities (CityName) VALUES ('Slagelse');
-INSERT INTO Cities (CityName) VALUES ('Holbæk');
-INSERT INTO Cities (CityName) VALUES ('Sønderborg');
-INSERT INTO Cities (CityName) VALUES ('Svendborg');
-INSERT INTO Cities (CityName) VALUES ('Hjørring');
-INSERT INTO Cities (CityName) VALUES ('Nørresundby');
-INSERT INTO Cities (CityName) VALUES ('Ringsted');
-INSERT INTO Cities (CityName) VALUES ('Ølstykke-Stenløse');
-INSERT INTO Cities (CityName) VALUES ('Frederikshavn');
-INSERT INTO Cities (CityName) VALUES ('Haderslev');
-INSERT INTO Cities (CityName) VALUES ('Smørumnedre');
-INSERT INTO Cities (CityName) VALUES ('Birkerød');
-INSERT INTO Cities (CityName) VALUES ('Farum');
-INSERT INTO Cities (CityName) VALUES ('Skive');
-INSERT INTO Cities (CityName) VALUES ('Skanderborg');
-INSERT INTO Cities (CityName) VALUES ('Nyborg');
-INSERT INTO Cities (CityName) VALUES ('Solrød Strand');
-INSERT INTO Cities (CityName) VALUES ('Frederikssund');
-INSERT INTO Cities (CityName) VALUES ('Nykøbing F');
-INSERT INTO Cities (CityName) VALUES ('Lillerød');
-INSERT INTO Cities (CityName) VALUES ('Aabenraa');
-INSERT INTO Cities (CityName) VALUES ('Middelfart');
-INSERT INTO Cities (CityName) VALUES ('Kalundborg');
-INSERT INTO Cities (CityName) VALUES ('Ikast');
-INSERT INTO Cities (CityName) VALUES ('Hedehusene-Fløng');
-INSERT INTO Cities (CityName) VALUES ('Korsør');
-INSERT INTO Cities (CityName) VALUES ('Grenaa');
-INSERT INTO Cities (CityName) VALUES ('Varde');
-INSERT INTO Cities (CityName) VALUES ('Rønne');
-INSERT INTO Cities (CityName) VALUES ('Thisted');
-INSERT INTO Cities (CityName) VALUES ('Værløse');
-INSERT INTO Cities (CityName) VALUES ('Odder');
-INSERT INTO Cities (CityName) VALUES ('Brønderslev');
-INSERT INTO Cities (CityName) VALUES ('Frederiksværk');
-INSERT INTO Cities (CityName) VALUES ('Hedensted-Løsning');
-INSERT INTO Cities (CityName) VALUES ('Nakskov');
-INSERT INTO Cities (CityName) VALUES ('Dragør');
-INSERT INTO Cities (CityName) VALUES ('Haslev');
-INSERT INTO Cities (CityName) VALUES ('Hobro');
-INSERT INTO Cities (CityName) VALUES ('Vordingborg');
-INSERT INTO Cities (CityName) VALUES ('Jyllinge');
-INSERT INTO Cities (CityName) VALUES ('Lystrup');
-INSERT INTO Cities (CityName) VALUES ('Vejen');
-INSERT INTO Cities (CityName) VALUES ('Struer');
-INSERT INTO Cities (CityName) VALUES ('Ringkøbing');
-INSERT INTO Cities (CityName) VALUES ('Humlebæk');
-INSERT INTO Cities (CityName) VALUES ('Grindsted');
-INSERT INTO Cities (CityName) VALUES ('Beder-Malling');
-INSERT INTO Cities (CityName) VALUES ('Støvring');
-INSERT INTO Cities (CityName) VALUES ('Galten-Skovby');
-INSERT INTO Cities (CityName) VALUES ('Nykøbing M');
-INSERT INTO Cities (CityName) VALUES ('Fredensborg');
-INSERT INTO Cities (CityName) VALUES ('Helsinge');
-INSERT INTO Cities (CityName) VALUES ('Sæby');
-INSERT INTO Cities (CityName) VALUES ('Aars');
-INSERT INTO Cities (CityName) VALUES ('Løgten-Skødstrup');
-INSERT INTO Cities (CityName) VALUES ('Hundested');
-INSERT INTO Cities (CityName) VALUES ('Hørning');
-INSERT INTO Cities (CityName) VALUES ('Ribe');
-INSERT INTO Cities (CityName) VALUES ('Hinnerup');
-INSERT INTO Cities (CityName) VALUES ('Hadsten');
-INSERT INTO Cities (CityName) VALUES ('Nivå');
-INSERT INTO Cities (CityName) VALUES ('Sorø');
-INSERT INTO Cities (CityName) VALUES ('Skjern');
-INSERT INTO Cities (CityName) VALUES ('Svenstrup');
-INSERT INTO Cities (CityName) VALUES ('Tønder');
-INSERT INTO Cities (CityName) VALUES ('Skagen');
-INSERT INTO Cities (CityName) VALUES ('Bjerringbro');
-INSERT INTO Cities (CityName) VALUES ('Brande');
-INSERT INTO Cities (CityName) VALUES ('Vojens');
-INSERT INTO Cities (CityName) VALUES ('Ry');
-INSERT INTO Cities (CityName) VALUES ('Ebeltoft');
-INSERT INTO Cities (CityName) VALUES ('Bramming');
-INSERT INTO Cities (CityName) VALUES ('Billund');
-INSERT INTO Cities (CityName) VALUES ('Hammel');
-INSERT INTO Cities (CityName) VALUES ('Faaborg');
-INSERT INTO Cities (CityName) VALUES ('Lemvig');
-INSERT INTO Cities (CityName) VALUES ('Slangerup');
-INSERT INTO Cities (CityName) VALUES ('Gilleleje');
-INSERT INTO Cities (CityName) VALUES ('Ringe');
-INSERT INTO Cities (CityName) VALUES ('Aabybro');
-INSERT INTO Cities (CityName) VALUES ('Skælskør');
-INSERT INTO Cities (CityName) VALUES ('Børkop');
-INSERT INTO Cities (CityName) VALUES ('Hornslet');
-INSERT INTO Cities (CityName) VALUES ('Assens');
-INSERT INTO Cities (CityName) VALUES ('Kerteminde');
-INSERT INTO Cities (CityName) VALUES ('Rødekro');
-INSERT INTO Cities (CityName) VALUES ('Bellinge');
-INSERT INTO Cities (CityName) VALUES ('Hellebæk-Ålsgårde');
-INSERT INTO Cities (CityName) VALUES ('Nordborg');
-INSERT INTO Cities (CityName) VALUES ('Maribo');
-INSERT INTO Cities (CityName) VALUES ('Nibe');
-INSERT INTO Cities (CityName) VALUES ('Hirtshals');
-INSERT INTO Cities (CityName) VALUES ('Munkebo');
-INSERT INTO Cities (CityName) VALUES ('Hornbæk-Dronningmølle');
-INSERT INTO Cities (CityName) VALUES ('Tune');
-INSERT INTO Cities (CityName) VALUES ('Otterup');
-INSERT INTO Cities (CityName) VALUES ('Kjellerup');
-INSERT INTO Cities (CityName) VALUES ('Fensmark');
-INSERT INTO Cities (CityName) VALUES ('Mårslet');
-INSERT INTO Cities (CityName) VALUES ('Klarup');
-INSERT INTO Cities (CityName) VALUES ('Nykøbing S');
+INSERT INTO Cities (CityName) VALUES
+('Aarhus'),
+('Odense'),
+('Aalborg'),
+('Esbjerg'),
+('Randers'),
+('Horsens'),
+('Kolding'),
+('Vejle'),
+('Roskilde'),
+('Herning'),
+('Silkeborg'),
+('Hørsholm'),
+('Helsingør'),
+('Næstved'),
+('Viborg'),
+('Fredericia'),
+('Køge'),
+('Holstebro'),
+('Taastrup'),
+('Hillerød'),
+('Slagelse'),
+('Holbæk'),
+('Sønderborg'),
+('Svendborg'),
+('Hjørring'),
+('Nørresundby'),
+('Ringsted'),
+('Ølstykke-Stenløse'),
+('Frederikshavn'),
+('Haderslev'),
+('Smørumnedre'),
+('Birkerød'),
+('Farum'),
+('Skive'),
+('Skanderborg'),
+('Nyborg'),
+('Solrød Strand'),
+('Frederikssund'),
+('Nykøbing F'),
+('Lillerød'),
+('Aabenraa'),
+('Middelfart'),
+('Kalundborg'),
+('Ikast'),
+('Hedehusene-Fløng'),
+('Korsør'),
+('Grenaa'),
+('Varde'),
+('Rønne'),
+('Thisted'),
+('Værløse'),
+('Odder'),
+('Brønderslev'),
+('Frederiksværk'),
+('Hedensted-Løsning'),
+('Nakskov'),
+('Dragør'),
+('Haslev'),
+('Hobro'),
+('Vordingborg'),
+('Jyllinge'),
+('Lystrup'),
+('Vejen'),
+('Struer'),
+('Ringkøbing'),
+('Humlebæk'),
+('Grindsted'),
+('Beder-Malling'),
+('Støvring'),
+('Galten-Skovby'),
+('Nykøbing M'),
+('Fredensborg'),
+('Helsinge'),
+('Sæby'),
+('Aars'),
+('Løgten-Skødstrup'),
+('Hundested'),
+('Hørning'),
+('Ribe'),
+('Hinnerup'),
+('Hadsten'),
+('Nivå'),
+('Sorø'),
+('Skjern'),
+('Svenstrup'),
+('Tønder'),
+('Skagen'),
+('Bjerringbro'),
+('Brande'),
+('Vojens'),
+('Ry'),
+('Ebeltoft'),
+('Bramming'),
+('Billund'),
+('Hammel'),
+('Faaborg'),
+('Lemvig'),
+('Slangerup'),
+('Gilleleje'),
+('Ringe'),
+('Aabybro'),
+('Skælskør'),
+('Børkop'),
+('Hornslet'),
+('Assens'),
+('Kerteminde'),
+('Rødekro'),
+('Bellinge'),
+('Hellebæk-Ålsgårde'),
+('Nordborg'),
+('Maribo'),
+('Nibe'),
+('Hirtshals'),
+('Munkebo'),
+('Hornbæk-Dronningmølle'),
+('Tune'),
+('Otterup'),
+('Kjellerup'),
+('Fensmark'),
+('Mårslet'),
+('Klarup'),
+('Nykøbing S'),
+('Strøby Egede'),
+('Hadsund'),
+('Strib'),
+('Vamdrup'),
+('Borup'),
+('Vodskov'),
+('Viby S'),
+('Solbjerg'),
+('Give'),
+('Rudkøbing'),
+('Brørup'),
+('Sejs-Svejbæk'),
+('Sakskøbing'),
+('Havdrup'),
+('Hjallerup'),
+('Gråsten'),
+('Høng'),
+('Kirke Hvalsø'),
+('Padborg'),
+('Jyderup'),
+('Svogerslev'),
+('Sunds'),
+('Langeskov'),
+('Videbæk'),
+('Årslev'),
+('Faxe'),
+('Lynge-Uggeløse'),
+('Tarm'),
+('Jægerspris'),
+('Bogense'),
+('Dianalund'),
+('Vildbjerg'),
+('Juelsminde'),
+('Brædstrup'),
+('Harlev'),
+('Løgstør'),
+('Frederiksberg'),
+('Tølløse'),
+('Præstø'),
+('Assentoft'),
+('Ølgod'),
+('Jelling'),
+('Stege'),
+('Virklund'),
+('Nexø'),
+('Store Heddinge'),
+('Gistrup'),
+('Hjortshøj'),
+('Græsted'),
+('Dronninglund'),
+('Taulov'),
+('Storvorde'),
+('Løgumkloster'),
+('Farsø'),
+('Glamsbjerg'),
+('Thurø By'),
+('Fjerritslev'),
+('Sabro'),
+('Vissenbjerg'),
+('Rønde'),
+('Søndersø'),
+('Broager'),
+('Toftlund'),
+('Aulum'),
+('Trige'),
+('Nørre Aaby'),
+('Skærbæk'),
+('Aarup'),
+('Lund'),
+('Sundby'),
+('Frejlev'),
+('Augustenborg'),
+('Auning'),
+('Bjæverskov'),
+('Søften'),
+('Asnæs'),
+('Lejre'),
+('Skibby'),
+('Ejby'),
+('Vindinge'),
+('Sindal'),
+('Brejning'),
+('Sankt Klemens'),
+('Vinderup'),
+('Holsted'),
+('Skørping'),
+('Egebjerg'),
+('Blovstrød'),
+('Christiansfeld'),
+('Lunderskov'),
+('Tørring'),
+('Pandrup'),
+('Tjæreborg'),
+('Hårlev'),
+('Ganløse'),
+('Vestbjerg'),
+('Langå'),
+('Skævinge'),
+('Højslev Stationsby'),
+('Oksbøl'),
+('Hvide Sande'),
+('Svinninge'),
+('Aalestrup'),
+('Rødding'),
+('Rønnede'),
+('Nordby'),
+('Tinglev'),
+('Gundsømagle'),
+('Hurup'),
+('Høruphav'),
+('Ryomgård'),
+('Brovst'),
+('Kibæk'),
+('Skibet'),
+('Ullerslev'),
+('Vrå'),
+('Østbirk'),
+('Mariager'),
+('Forlev'),
+('Stoholm'),
+('Vester Hassing'),
+('Vadum'),
+('Arden'),
+('Stevnstrup'),
+('Haarby'),
+('Hals'),
+('Liseleje'),
+('Starup'),
+('Nyråd'),
+('Faxe Ladeplads'),
+('Gram'),
+('Guderup'),
+('Hørve'),
+('Kås'),
+('København'),
+('Albertslund'),
+('Brøndby'),
+('Gentofte'),
+('Gladsaxe'),
+('Glostrup'),
+('Herlev'),
+('Hvidovre'),
+('Lyngby-Taarbæk'),
+('Rødovre'),
+('Tårnby'),
+('Vallensbæk'),
+('Ishøj'),
+('Greve Strand'),
+('Ballerup'),
+('Søllerød'),
+('Gribskov'),
+('Halsnæs'),
+('Rudersdal'),
+('Egedal'),
+('Allerød'),
+('Furesø'),
+('Høje Taastrup'),
+('Bornholm');
