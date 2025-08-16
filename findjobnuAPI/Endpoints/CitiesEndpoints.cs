@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.OpenApi;
 using findjobnuAPI.Models;
 using findjobnuAPI.Repositories.Context;
+using System.Globalization;
 namespace findjobnuAPI.Endpoints;
 
 public static class CitiesEndpoints
@@ -31,8 +32,12 @@ public static class CitiesEndpoints
 
         group.MapGet("/search", async Task<Results<Ok<List<Cities>>, NoContent>> (string query, FindjobnuContext db) =>
         {
+            if (string.IsNullOrWhiteSpace(query))
+                return TypedResults.NoContent();
+
+            var normalizedQuery = $"%{query.Trim()}%";
             var results = await db.Cities.AsNoTracking()
-                .Where(model => model.CityName.Contains(query))
+                .Where(model => EF.Functions.Like(model.CityName, normalizedQuery))
                 .ToListAsync();
 
             return results.Any()

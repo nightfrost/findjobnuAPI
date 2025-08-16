@@ -1,5 +1,6 @@
 ﻿using findjobnuAPI.Models;
 using findjobnuAPI.Repositories.Context;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -18,7 +19,7 @@ namespace findjobnuAPI.Services
         private readonly string _linkedInEmail;
         private readonly string _linkedInPassword;
         private readonly FindjobnuContext _context;
-        private readonly ILogger _logger;
+        private readonly ILogger<LinkedInProfileService> _logger;
 
         /// <summary>
         /// Initialize the LinkedIn Profile Service
@@ -32,7 +33,7 @@ namespace findjobnuAPI.Services
             string scriptDirectory,
             string linkedInEmail,
             string linkedInPassword,
-            ILogger logger)
+            ILogger<LinkedInProfileService> logger)
         {
             _scriptDirectory = scriptDirectory;
             _pythonExecutable = "python";
@@ -60,8 +61,10 @@ namespace findjobnuAPI.Services
         /// <returns>LinkedIn profile result</returns>
         public async Task<LinkedInProfileResult> GetProfileAsync(string userId)
         {
+            _logger.LogInformation("Getting LinkedIn profile for userId: {UserId}", userId);
             if (string.IsNullOrWhiteSpace(userId))
             {
+                _logger.LogWarning("UserId is required for LinkedIn profile fetch.");
                 return new LinkedInProfileResult
                 {
                     Success = false,
@@ -98,6 +101,7 @@ namespace findjobnuAPI.Services
                 using var process = Process.Start(startInfo);
                 if (process == null)
                 {
+                    _logger.LogError("Failed to start the Python script process for userId: {UserId}", userId);
                     return new LinkedInProfileResult
                     {
                         Success = false,
@@ -115,6 +119,7 @@ namespace findjobnuAPI.Services
 
                 if (process.ExitCode != 0)
                 {
+                    _logger.LogError("Python script exited with code {ExitCode} for userId: {UserId}. Error: {Error}", process.ExitCode, userId, error);
                     return new LinkedInProfileResult
                     {
                         Success = false,
@@ -124,6 +129,7 @@ namespace findjobnuAPI.Services
 
                 if (string.IsNullOrWhiteSpace(output))
                 {
+                    _logger.LogError("No output received from script for userId: {UserId}", userId);
                     return new LinkedInProfileResult
                     {
                         Success = false,
@@ -138,14 +144,20 @@ namespace findjobnuAPI.Services
                 };
 
                 var result = JsonSerializer.Deserialize<LinkedInProfileResult>(output, options);
-                return result ?? new LinkedInProfileResult
+                if (result == null)
                 {
-                    Success = false,
-                    Error = "Failed to parse script output"
-                };
+                    _logger.LogError("Failed to parse script output for userId: {UserId}", userId);
+                    return new LinkedInProfileResult
+                    {
+                        Success = false,
+                        Error = "Failed to parse script output"
+                    };
+                }
+                return result;
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Exception occurred while getting LinkedIn profile for userId: {UserId}", userId);
                 return new LinkedInProfileResult
                 {
                     Success = false,
@@ -158,13 +170,15 @@ namespace findjobnuAPI.Services
         {
             try
             {
+                _logger.LogInformation("Saving LinkedIn profile for userId: {UserId}", userid);
                 await _context.Profiles.AddAsync(profile);
                 var result = await _context.SaveChangesAsync();
+                _logger.LogInformation("LinkedIn profile saved for userId: {UserId}", userid);
                 return result > 0;
             }
             catch (Exception ex)
             {
-                _logger.LogError("Error saving profile. {ExceptionMessage}", ex.Message);
+                _logger.LogError(ex, "Error saving LinkedIn profile for userId: {UserId}", userid);
                 return false;
             }
         }

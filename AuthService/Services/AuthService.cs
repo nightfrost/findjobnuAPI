@@ -31,6 +31,7 @@ namespace AuthService.Services
 
         public async Task<RegisterResult> RegisterAsync(RegisterRequest request, bool isLinkedInUser = false)
         {
+            _logger.LogInformation("RegisterAsync called for email: {Email}, isLinkedInUser: {IsLinkedInUser}", request.Email, isLinkedInUser);
             var user = new ApplicationUser
             {
                 UserName = request.Email,
@@ -67,8 +68,8 @@ namespace AuthService.Services
                 });
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
-
                 var authResponse = await GenerateAuthResponseAsync(user);
+                _logger.LogInformation("RegisterAsync succeeded for email: {Email}", request.Email);
                 return new RegisterResult { Success = true, AuthResponse = authResponse };
             }
 
@@ -79,46 +80,64 @@ namespace AuthService.Services
 
         public async Task<LoginResult> LoginAsync(LoginRequest request, bool isLinkedInUser = false)
         {
+            _logger.LogInformation("LoginAsync called for email: {Email}, isLinkedInUser: {IsLinkedInUser}", request.Email, isLinkedInUser);
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
+            {
+                _logger.LogWarning("LoginAsync failed: No user exists with the given E-mail: {Email}", request.Email);
                 return new LoginResult{ AuthResponse = null, ErrorMessage = "No user exists with the given E-mail.", Success = false};
+            }
 
             if (isLinkedInUser && !user.IsLinkedInUser)
+            {
+                _logger.LogWarning("LoginAsync failed: User is not a LinkedIn user. Email: {Email}", request.Email);
                 return new LoginResult { AuthResponse = null, ErrorMessage = "This user is not a LinkedIn user.", Success = false };
+            }
 
             if (!isLinkedInUser && user.IsLinkedInUser)
+            {
+                _logger.LogWarning("LoginAsync failed: User is a LinkedIn user. Email: {Email}", request.Email);
                 return new LoginResult { AuthResponse = null, ErrorMessage = "This user is a LinkedIn user.", Success = false };
+            }
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: false);
             if (result.Succeeded)
             {
                 var AuthResponse = await GenerateAuthResponseAsync(user);
                 if (AuthResponse == null)
+                {
+                    _logger.LogError("LoginAsync failed: Failed to generate authentication response for email: {Email}", request.Email);
                     return new LoginResult { AuthResponse = null, ErrorMessage = "Failed to generate authentication response.", Success = false };
-
+                }
+                _logger.LogInformation("LoginAsync succeeded for email: {Email}", request.Email);
                 return new LoginResult { AuthResponse = AuthResponse, Success = true };
             }
 
+            _logger.LogWarning("LoginAsync failed: Invalid credentials for email: {Email}", request.Email);
             return new LoginResult { AuthResponse = null, ErrorMessage = "Invalid credentials.", Success = false };
         }
 
         public async Task<AuthResponse?> RefreshTokenAsync(TokenRefreshRequest request)
         {
+            _logger.LogInformation("RefreshTokenAsync called for AccessToken: {AccessToken}", request.AccessToken);
             var principal = GetPrincipalFromExpiredToken(request.AccessToken);
             if (principal == null)
             {
+                _logger.LogWarning("RefreshTokenAsync failed: Invalid principal from access token.");
                 return null;
             }
 
             var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
+                _logger.LogWarning("RefreshTokenAsync failed: No userId in token.");
                 return null;
             }
 
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
+                _logger.LogWarning("RefreshTokenAsync failed: User not found for userId: {UserId}", userId);
                 return null;
             }
 
@@ -131,6 +150,7 @@ namespace AuthService.Services
                 {
                     await RevokeDescendantRefreshTokens(storedRefreshToken, user);
                 }
+                _logger.LogWarning("RefreshTokenAsync failed: Refresh token not found or not active for userId: {UserId}", userId);
                 return null;
             }
 
@@ -140,38 +160,98 @@ namespace AuthService.Services
             var newAuthResponse = await GenerateAuthResponseAsync(user, storedRefreshToken.ReplacedByToken);
 
             await _dbContext.SaveChangesAsync();
+            _logger.LogInformation("RefreshTokenAsync succeeded for userId: {UserId}", userId);
             return newAuthResponse;
         }
 
         public async Task<bool> RevokeRefreshTokenAsync(string userId, string refreshToken)
         {
+            _logger.LogInformation("RevokeRefreshTokenAsync called for userId: {UserId}", userId);
             var storedRefreshToken = await _dbContext.RefreshTokens
                 .FirstOrDefaultAsync(rt => rt.Token == refreshToken && rt.UserId == userId);
 
             if (storedRefreshToken == null || !storedRefreshToken.IsActive)
             {
+                _logger.LogWarning("RevokeRefreshTokenAsync failed: Refresh token not found or not active for userId: {UserId}", userId);
                 return false;
             }
 
             storedRefreshToken.Revoked = DateTime.UtcNow;
             _dbContext.RefreshTokens.Update(storedRefreshToken);
             await _dbContext.SaveChangesAsync();
+            _logger.LogInformation("RevokeRefreshTokenAsync succeeded for userId: {UserId}", userId);
             return true;
         }
 
         public async Task<bool> ConfirmEmailAsync(string userId, string token)
         {
+            _logger.LogInformation("ConfirmEmailAsync called for userId: {UserId}", userId);
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
+            {
+                _logger.LogWarning("ConfirmEmailAsync failed: User not found for userId: {UserId}", userId);
                 return false;
+            }
 
             var result = await _userManager.ConfirmEmailAsync(user, token);
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("ConfirmEmailAsync succeeded for userId: {UserId}", userId);
+            }
+            else
+            {
+                _logger.LogWarning("ConfirmEmailAsync failed for userId: {UserId}", userId);
+            }
             return result.Succeeded;
         }
+        public async Task<IdentityResult> UpdatePasswordAsync(string userId, string currentPassword, string newPassword)
+        {
+            _logger.LogInformation("UpdatePasswordAsync called for userId: {UserId}", userId);
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                _logger.LogWarning("UpdatePasswordAsync failed: User not found for userId: {UserId}", userId);
+                return IdentityResult.Failed(new IdentityError { Description = "User not found." });
+            }
 
+            var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("UpdatePasswordAsync succeeded for userId: {UserId}", userId);
+            }
+            else
+            {
+                _logger.LogWarning("UpdatePasswordAsync failed for userId: {UserId}", userId);
+            }
+            return result;
+        }
+
+        public async Task<IdentityResult> LockoutUserAsync(string userId, DateTimeOffset? lockoutEnd = null)
+        {
+            _logger.LogInformation("LockoutUserAsync called for userId: {UserId}", userId);
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                _logger.LogWarning("LockoutUserAsync failed: User not found for userId: {UserId}", userId);
+                return IdentityResult.Failed(new IdentityError { Description = "User not found." });
+            }
+            // Default lockout: 1 year if not specified
+            var end = lockoutEnd ?? DateTimeOffset.UtcNow.AddYears(1);
+            var result = await _userManager.SetLockoutEndDateAsync(user, end);
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("LockoutUserAsync succeeded for userId: {UserId}", userId);
+            }
+            else
+            {
+                _logger.LogWarning("LockoutUserAsync failed for userId: {UserId}", userId);
+            }
+            return result;
+        }
 
         private async Task<AuthResponse> GenerateAuthResponseAsync(ApplicationUser user, string? existingRefreshToken = null)
         {
+            // Logging is not required for private methods unless specifically requested
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
@@ -223,7 +303,6 @@ namespace AuthService.Services
                 await _dbContext.RefreshTokens.AddAsync(newRefreshToken);
                 await _dbContext.SaveChangesAsync();
             }
-
 
             return new AuthResponse
             {
@@ -330,25 +409,31 @@ namespace AuthService.Services
 
         public async Task<Tuple<bool, string?>> IsLinkedInUserOrHasVerifiedTheirLinkedIn(string userId)
         {
+            _logger.LogInformation("IsLinkedInUserOrHasVerifiedTheirLinkedIn called for userId: {UserId}", userId);
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
+                _logger.LogWarning("IsLinkedInUserOrHasVerifiedTheirLinkedIn failed: User not found for userId: {UserId}", userId);
                 return new Tuple<bool, string?>(false, null);
             }
 
             if (user.IsLinkedInUser || user.HasVerifiedLinkedIn)
             {
+                _logger.LogInformation("IsLinkedInUserOrHasVerifiedTheirLinkedIn: User is LinkedIn user or has verified LinkedIn. userId: {UserId}", userId);
                 return new Tuple<bool, string?>(true, user.LinkedInId);
             }
 
+            _logger.LogInformation("IsLinkedInUserOrHasVerifiedTheirLinkedIn: User is not LinkedIn user and has not verified LinkedIn. userId: {UserId}", userId);
             return new Tuple<bool, string?>(false, null);
         }
 
         public async Task<UserInformationResult> GetUserInformationAsync(string userId)
         {
+            _logger.LogInformation("GetUserInformationAsync called for userId: {UserId}", userId);
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
+                _logger.LogWarning("GetUserInformationAsync failed: User not found for userId: {UserId}", userId);
                 return new UserInformationResult
                 {
                     Success = false,
@@ -356,6 +441,7 @@ namespace AuthService.Services
                 };
             }
 
+            _logger.LogInformation("GetUserInformationAsync succeeded for userId: {UserId}", userId);
             return new UserInformationResult
             {
                 Success = true,
@@ -363,7 +449,7 @@ namespace AuthService.Services
             };
         }
 
-        private UserInformationDTO MapToUserInformationDTO(ApplicationUser user)
+        private static UserInformationDTO MapToUserInformationDTO(ApplicationUser user)
         {
             return new UserInformationDTO
             {

@@ -1,7 +1,6 @@
 using AuthService.Data;
 using AuthService.Endpoints;
 using AuthService.Entities;
-using AuthService.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -10,8 +9,25 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using AuthService.Services;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Only configure Serilog sinks in code, not in appsettings.json
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.MSSqlServer(
+        connectionString: builder.Configuration.GetConnectionString("FindjobnuConnection")!,
+        sinkOptions: new Serilog.Sinks.MSSqlServer.MSSqlServerSinkOptions
+        {
+            TableName = "Logs",
+            AutoCreateSqlTable = true
+        })
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("FindjobnuConnection")));
@@ -56,7 +72,6 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
-builder.Services.AddLogging();
 builder.Services.AddScoped<IAuthService, AuthService.Services.AuthService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ILinkedInAuthService, LinkedInAuthService>();
@@ -117,7 +132,6 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 
 // Enable CORS before other middleware
 app.UseCors("AllowAll");
-
 
 app.UseSwagger();
 app.UseSwaggerUI();

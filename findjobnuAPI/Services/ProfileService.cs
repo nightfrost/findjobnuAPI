@@ -6,16 +6,26 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace findjobnuAPI.Services
 {
-    public class ProfileService(FindjobnuContext db, IJobIndexPostsService jobService) : IProfileService
+    public class ProfileService : IProfileService
     {
-        private readonly FindjobnuContext _db = db;
-        private readonly IJobIndexPostsService _jobService = jobService;
+        private readonly FindjobnuContext _db;
+        private readonly IJobIndexPostsService _jobService;
+        private readonly ILogger<ProfileService> _logger;
+
+        public ProfileService(FindjobnuContext db, IJobIndexPostsService jobService, ILogger<ProfileService> logger)
+        {
+            _db = db;
+            _jobService = jobService;
+            _logger = logger;
+        }
 
         public async Task<ProfileDto?> GetByUserIdAsync(string userId)
         {
+            _logger.LogInformation("Getting profile by userId: {UserId}", userId);
             var profile = await _db.Profiles
                 .Include(p => p.BasicInfo)
                 .Include(p => p.Experiences)
@@ -26,7 +36,10 @@ namespace findjobnuAPI.Services
                 .Include(p => p.Skills)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.UserId == userId);
-            if (profile == null) return null;
+            if (profile == null) {
+                _logger.LogWarning("Profile not found for userId: {UserId}", userId);
+                return null;
+            }
             if (profile.BasicInfo == null) profile.BasicInfo = new BasicInfo();
 
             return new ProfileDto
@@ -101,6 +114,7 @@ namespace findjobnuAPI.Services
 
         public async Task<Profile?> CreateAsync(Profile profile)
         {
+            _logger.LogInformation("Creating new profile for userId: {UserId}", profile.UserId);
             _db.Profiles.Add(profile);
             await _db.SaveChangesAsync();
             return profile;
@@ -108,6 +122,7 @@ namespace findjobnuAPI.Services
 
         public async Task<bool> UpdateAsync(int id, Profile profile, string authenticatedUserId)
         {
+            _logger.LogInformation("Updating profile. Id: {Id}, AuthenticatedUserId: {AuthenticatedUserId}", id, authenticatedUserId);
             var entity = await _db.Profiles
                 .Include(p => p.BasicInfo)
                 .Include(p => p.Experiences)
@@ -117,8 +132,10 @@ namespace findjobnuAPI.Services
                 .Include(p => p.Contacts)
                 .Include(p => p.Skills)
                 .FirstOrDefaultAsync(model => model.Id == id && model.UserId == authenticatedUserId);
-            if (entity == null)
+            if (entity == null) {
+                _logger.LogWarning("Profile not found for update. Id: {Id}, AuthenticatedUserId: {AuthenticatedUserId}", id, authenticatedUserId);
                 return false;
+            }
 
             // Update fields now in BasicInfo
             entity.BasicInfo.FirstName = profile.BasicInfo.FirstName;
@@ -192,16 +209,20 @@ namespace findjobnuAPI.Services
             }
 
             await _db.SaveChangesAsync();
+            _logger.LogInformation("Profile updated successfully. Id: {Id}", id);
             return true;
         }
 
         public async Task<PagedList<JobIndexPosts>> GetSavedJobsByUserIdAsync(string userId, int page = 1)
         {
+            _logger.LogInformation("Getting saved jobs for userId: {UserId}, Page: {Page}", userId, page);
             int pagesize = 20;
 
             var profile = await _db.Profiles.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId);
-            if (profile == null || profile.SavedJobPosts == null || profile.SavedJobPosts.Count == 0)
+            if (profile == null || profile.SavedJobPosts == null || profile.SavedJobPosts.Count == 0) {
+                _logger.LogWarning("No saved jobs found for userId: {UserId}", userId);
                 return new PagedList<JobIndexPosts>(0, pagesize, page, []);
+            }
 
             var jobIds = profile.SavedJobPosts
                 .Select(id => int.TryParse(id, out var jid) ? jid : (int?)null)
@@ -209,8 +230,10 @@ namespace findjobnuAPI.Services
                 .Select(id => id!.Value)
                 .ToHashSet();
 
-            if (jobIds.Count == 0)
+            if (jobIds.Count == 0) {
+                _logger.LogWarning("No valid job IDs found in saved jobs for userId: {UserId}", userId);
                 return new PagedList<JobIndexPosts>(0, pagesize, page, []);
+            }
 
             var jobs = await _db.JobIndexPosts
                 .Where(j => jobIds.Contains(j.JobID))
@@ -221,10 +244,12 @@ namespace findjobnuAPI.Services
 
         public async Task<bool> SaveJobAsync(string userId, string jobId)
         {
+            _logger.LogInformation("Saving job for userId: {UserId}, JobId: {JobId}", userId, jobId);
             var profile = await _db.Profiles
                 .FirstOrDefaultAsync(x => x.UserId == userId);
             if (profile == null)
             {
+                _logger.LogWarning("Profile not found for saving job. UserId: {UserId}", userId);
                 return false;
             }
             if (profile.SavedJobPosts == null)
@@ -235,23 +260,31 @@ namespace findjobnuAPI.Services
             {
                 profile.SavedJobPosts.Add(jobId);
                 await _db.SaveChangesAsync();
+                _logger.LogInformation("Job saved successfully for userId: {UserId}, JobId: {JobId}", userId, jobId);
                 return true;
             }
+            _logger.LogInformation("Job already saved for userId: {UserId}, JobId: {JobId}", userId, jobId);
             return false;
         }
 
         public async Task<bool> RemoveSavedJobAsync(string userId, string jobId)
         {
+            _logger.LogInformation("Removing saved job for userId: {UserId}, JobId: {JobId}", userId, jobId);
             var profile = await _db.Profiles
                 .FirstOrDefaultAsync(x => x.UserId == userId);
 
-            if (profile == null || profile.SavedJobPosts == null) return false;
+            if (profile == null || profile.SavedJobPosts == null) {
+                _logger.LogWarning("Profile or saved jobs not found for removing job. UserId: {UserId}", userId);
+                return false;
+            }
             
             if (profile.SavedJobPosts.Remove(jobId))
             {
                 await _db.SaveChangesAsync();
+                _logger.LogInformation("Job removed from saved jobs for userId: {UserId}, JobId: {JobId}", userId, jobId);
                 return true;
             }
+            _logger.LogInformation("Job not found in saved jobs for userId: {UserId}, JobId: {JobId}", userId, jobId);
             return false;
         }
 

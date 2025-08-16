@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Moq;
+using Microsoft.Extensions.Logging;
 
 namespace findjobnuAPI.Tests.Services
 {
@@ -18,7 +19,13 @@ namespace findjobnuAPI.Tests.Services
                 .Options;
             context = new FindjobnuContext(options);
             var jobServiceMock = new Mock<IJobIndexPostsService>();
-            return new ProfileService(context, jobServiceMock.Object);
+            return GetService(context, jobServiceMock);
+        }
+
+        private ProfileService GetService(FindjobnuContext context, Mock<IJobIndexPostsService> jobServiceMock)
+        {
+            var logger = new Mock<ILogger<ProfileService>>().Object;
+            return new ProfileService(context, jobServiceMock.Object, logger);
         }
 
         [Fact]

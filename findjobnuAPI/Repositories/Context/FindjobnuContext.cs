@@ -19,6 +19,26 @@ namespace findjobnuAPI.Repositories.Context
         public DbSet<Accomplishment> Accomplishments { get; set; }
         public DbSet<Contact> Contacts { get; set; }
         public DbSet<Skill> Skills { get; set; }
+        public DbSet<JobKeyword> JobKeywords { get; set; }
+
+        private static class ListStringConverterHelpers
+        {
+            public static string? ToCsv(List<string>? v) => v == null ? null : string.Join(",", v);
+            public static List<string> FromCsv(string? v) => string.IsNullOrWhiteSpace(v) ? new List<string>() : v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+
+            public static string? ToJson(List<string>? v) => v == null ? null : JsonConvert.SerializeObject(v);
+            public static List<string> FromJsonWithCsvFallback(string? v)
+            {
+                if (string.IsNullOrWhiteSpace(v)) return new List<string>();
+                try
+                {
+                    var list = JsonConvert.DeserializeObject<List<string>>(v);
+                    if (list != null) return list;
+                }
+                catch { }
+                return FromCsv(v);
+            }
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -32,23 +52,32 @@ namespace findjobnuAPI.Repositories.Context
                 .IsUnique();
 
             var keywordsConverter = new ValueConverter<List<string>?, string>(
-                v => v == null ? null : string.Join(",", v),
-                v => string.IsNullOrWhiteSpace(v) ? new List<string>() : v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList()
+                v => ListStringConverterHelpers.ToCsv(v),
+                v => ListStringConverterHelpers.FromCsv(v)
             );
-            var keywordsComparer = new ValueComparer<List<string>?>(
+            var listComparer = new ValueComparer<List<string>?>(
                 (c1, c2) => (c1 == null && c2 == null) || (c1 != null && c2 != null && c1.SequenceEqual(c2)),
                 c => c == null ? 0 : c.Aggregate(0, (a, v) => HashCode.Combine(a, v != null ? v.GetHashCode() : 0)),
                 c => c == null ? null : c.ToList()
             );
 
+            var savedJobsConverter = new ValueConverter<List<string>?, string>(
+                v => ListStringConverterHelpers.ToJson(v),
+                v => ListStringConverterHelpers.FromJsonWithCsvFallback(v)
+            );
+
             modelBuilder.Entity<Profile>()
                 .Property(p => p.Keywords)
                 .HasConversion(keywordsConverter)
-                .Metadata.SetValueComparer(keywordsComparer);
+                .Metadata.SetValueComparer(listComparer);
+            modelBuilder.Entity<Profile>()
+                .Property(p => p.SavedJobPosts)
+                .HasConversion(savedJobsConverter)
+                .Metadata.SetValueComparer(listComparer);
             modelBuilder.Entity<JobIndexPosts>()
                 .Property(j => j.Keywords)
                 .HasConversion(keywordsConverter)
-                .Metadata.SetValueComparer(keywordsComparer);
+                .Metadata.SetValueComparer(listComparer);
 
             // Many-to-many: JobIndexPosts <-> Category
             modelBuilder.Entity<JobIndexPosts>()
@@ -64,6 +93,14 @@ namespace findjobnuAPI.Repositories.Context
                         je.ToTable("JobCategories");
                     }
                 );
+
+            // JobKeyword mappings and indexes
+            modelBuilder.Entity<JobKeyword>().HasKey(k => k.KeywordID);
+            modelBuilder.Entity<JobKeyword>()
+                .HasIndex(k => k.Keyword);
+            modelBuilder.Entity<JobKeyword>()
+                .HasIndex(k => new { k.JobID, k.Keyword })
+                .IsUnique();
 
             // Profile relationships
             modelBuilder.Entity<Profile>()
