@@ -19,27 +19,14 @@ jobs:
         with:
           dotnet-version: 8.0.x 
 
-      - name: Detect solution file
-        id: sln
-        shell: bash
-        run: |
-          set -euo pipefail
-          SOLUTION=$(git ls-files -z | tr '\0' '\n' | grep -E '\\.sln$' | head -n1)
-          if [ -z "$SOLUTION" ]; then
-            echo "No solution file tracked by git. Ensure the .sln is committed." >&2
-            exit 1
-          fi
-          echo "Found solution: $SOLUTION"
-          echo "solution=$SOLUTION" >> "$GITHUB_OUTPUT"
-
       - name: Restore (solution)
-        run: dotnet restore "${{ steps.sln.outputs.solution }}"
+        run: dotnet restore Findjobnu.sln
 
       - name: Build (solution)
-        run: dotnet build "${{ steps.sln.outputs.solution }}" --no-restore
+        run: dotnet build Findjobnu.sln --no-restore
 
       - name: Test (solution)
-        run: dotnet test "${{ steps.sln.outputs.solution }}" --no-build --verbosity normal
+        run: dotnet test Findjobnu.sln --no-build --verbosity normal
 
       - name: Publish API for deployment
         run: dotnet publish findjobnuAPI/FindjobnuService.csproj -c Release -o publish/findjobnuAPI
