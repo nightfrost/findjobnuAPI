@@ -124,7 +124,7 @@ jobs:
           key: ${{ secrets.SERVER_ROOT_CERTIFICATE }}
           script: |
             echo "Deployment completed on $(date)"
-            echo "Restarting findjobnu API service."
+            echo "Restarting findjobNu API service."
             sudo systemctl restart findjobnuapi.service
             echo "Restarting auth service service."
             sudo systemctl restart authapi.service
