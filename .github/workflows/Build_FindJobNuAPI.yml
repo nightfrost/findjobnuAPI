@@ -6,20 +6,22 @@ on:
   pull_request:
     branches: [ "master" ] 
 
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      MSSQL_SA_PASSWORD: ${{ secrets.MSSQL_SA_PASSWORD }}
+      FINDJOBNU_DB_PASSWORD: ${{ secrets.FINDJOBNU_DB_PASSWORD }}
     services:
       mssql:
         image: mcr.microsoft.com/mssql/server:2022-latest
         env:
-          SA_PASSWORD: ${{ secrets.MSSQL_SA_PASSWORD }}
+          SA_PASSWORD: ${{ env.MSSQL_SA_PASSWORD }}
           ACCEPT_EULA: Y
         ports:
           - 1433:1433
         options: >-
-          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P ${{ secrets.MSSQL_SA_PASSWORD }} -Q 'SELECT 1' || exit 1"
+          --health-cmd "(/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -Q 'SELECT 1') || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 30
@@ -32,25 +34,29 @@ jobs:
         with:
           dotnet-version: 8.0.x 
 
-      - name: Initialize MSSQL database and user
+      - name: Initialize MSSQL database and user (push only)
+        if: github.event_name == 'push'
         shell: bash
+        env:
+          SA_PWD: ${{ env.MSSQL_SA_PASSWORD }}
+          APP_PWD: ${{ env.FINDJOBNU_DB_PASSWORD }}
         run: |
           set -euo pipefail
           echo "Waiting for SQL Server to be ready..."
           for i in {1..60}; do
-            if /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "${{ secrets.MSSQL_SA_PASSWORD }}" -Q "SELECT 1" >/dev/null 2>&1; then
+            if /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$SA_PWD" -Q "SELECT 1" >/dev/null 2>&1; then
               break
             fi
             sleep 2
           done
-          /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "${{ secrets.MSSQL_SA_PASSWORD }}" -Q "IF DB_ID('JobScraperDB') IS NULL CREATE DATABASE JobScraperDB;"
-          /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "${{ secrets.MSSQL_SA_PASSWORD }}" -Q "IF NOT EXISTS (SELECT 1 FROM sys.sql_logins WHERE name = 'findjobnusystem') BEGIN CREATE LOGIN findjobnusystem WITH PASSWORD='${{ secrets.FINDJOBNU_DB_PASSWORD }}'; END"
-          /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "${{ secrets.MSSQL_SA_PASSWORD }}" -d JobScraperDB -Q "IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'findjobnusystem') BEGIN CREATE USER findjobnusystem FOR LOGIN findjobnusystem; EXEC sp_addrolemember 'db_owner', 'findjobnusystem'; END"
+          /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$SA_PWD" -Q "IF DB_ID('JobScraperDB') IS NULL CREATE DATABASE JobScraperDB;"
+          /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$SA_PWD" -Q "IF NOT EXISTS (SELECT 1 FROM sys.sql_logins WHERE name = 'findjobnusystem') BEGIN CREATE LOGIN findjobnusystem WITH PASSWORD='${APP_PWD}'; END"
+          /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$SA_PWD" -d JobScraperDB -Q "IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'findjobnusystem') BEGIN CREATE USER findjobnusystem FOR LOGIN findjobnusystem; EXEC sp_addrolemember 'db_owner', 'findjobnusystem'; END"
 
       - name: Restore (solution)
         run: dotnet restore Findjobnu.sln
         env:
-          ConnectionStrings__FindjobnuConnection: Server=localhost,1433;Initial Catalog=JobScraperDB;Persist Security Info=False;User ID=findjobnusystem;Password=${{ secrets.FINDJOBNU_DB_PASSWORD }};MultipleActiveResultSets=False;Encrypt=False;TrustServerCertificate=True;Connection Timeout=30;
+          ConnectionStrings__FindjobnuConnection: Server=localhost,1433;Initial Catalog=JobScraperDB;Persist Security Info=False;User ID=findjobnusystem;Password=${{ env.FINDJOBNU_DB_PASSWORD }};MultipleActiveResultSets=False;Encrypt=False;TrustServerCertificate=True;Connection Timeout=30;
 
       - name: Build (solution)
         run: dotnet build Findjobnu.sln --no-restore
@@ -58,7 +64,7 @@ jobs:
       - name: Test (solution)
         run: dotnet test Findjobnu.sln --no-build --verbosity normal
         env:
-          ConnectionStrings__FindjobnuConnection: Server=localhost,1433;Initial Catalog=JobScraperDB;Persist Security Info=False;User ID=findjobnusystem;Password=${{ secrets.FINDJOBNU_DB_PASSWORD }};MultipleActiveResultSets=False;Encrypt=False;TrustServerCertificate=True;Connection Timeout=30;
+          ConnectionStrings__FindjobnuConnection: Server=localhost,1433;Initial Catalog=JobScraperDB;Persist Security Info=False;User ID=findjobnusystem;Password=${{ env.FINDJOBNU_DB_PASSWORD }};MultipleActiveResultSets=False;Encrypt=False;TrustServerCertificate=True;Connection Timeout=30;
 
       - name: Publish API for deployment
         run: dotnet publish findjobnuAPI/FindjobnuService.csproj -c Release -o publish/findjobnuAPI
