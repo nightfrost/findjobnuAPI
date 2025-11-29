@@ -19,21 +19,33 @@ namespace FindjobnuService
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
+                .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables();
 
-            Log.Logger = new LoggerConfiguration()
+            var loggerConfig = new LoggerConfiguration()
                 .ReadFrom.Configuration(builder.Configuration)
                 .Enrich.FromLogContext()
-                .WriteTo.Console()
-                .WriteTo.MSSqlServer(
-                    connectionString: builder.Configuration.GetConnectionString("FindjobnuConnection")!,
-                    sinkOptions: new Serilog.Sinks.MSSqlServer.MSSqlServerSinkOptions
-                    {
-                        TableName = "Logs",
-                        AutoCreateSqlTable = true
-                    })
-                .CreateLogger();
+                .WriteTo.Console();
 
+            // Guard MSSQL sink for CI/Testing environments
+            var isCi = builder.Environment.IsEnvironment("CI") || builder.Environment.IsEnvironment("Testing") ||
+                       string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase);
+            if (!isCi)
+            {
+                var sqlConn = builder.Configuration.GetConnectionString("FindjobnuConnection");
+                if (!string.IsNullOrWhiteSpace(sqlConn))
+                {
+                    loggerConfig = loggerConfig.WriteTo.MSSqlServer(
+                        connectionString: sqlConn,
+                        sinkOptions: new Serilog.Sinks.MSSqlServer.MSSqlServerSinkOptions
+                        {
+                            TableName = "Logs",
+                            AutoCreateSqlTable = true
+                        });
+                }
+            }
+
+            Log.Logger = loggerConfig.CreateLogger();
             builder.Host.UseSerilog();
 
             var connectionString = builder.Configuration.GetConnectionString("FindjobnuConnection") ?? throw new InvalidConfigurationException("Connection string 'FindjobnuConnection' not found.");
