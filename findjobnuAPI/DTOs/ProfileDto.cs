@@ -1,4 +1,4 @@
-namespace findjobnuAPI.DTOs
+namespace FindjobnuService.DTOs
 {
     public class ProfileDto
     {
@@ -15,6 +15,10 @@ namespace findjobnuAPI.DTOs
         public List<AccomplishmentDto>? Accomplishments { get; set; }
         public List<ContactDto>? Contacts { get; set; }
         public List<SkillDto>? Skills { get; set; }
+        // Indicates whether a job agent has been set up
+        public bool HasJobAgent { get; set; }
+        // Optional job agent details
+        public JobAgentDto? JobAgent { get; set; }
     }
 
     public class BasicInfoDto
@@ -81,5 +85,16 @@ namespace findjobnuAPI.DTOs
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public int Proficiency { get; set; } 
+    }
+
+    public class JobAgentDto
+    {
+        public int Id { get; set; }
+        public bool Enabled { get; set; }
+        public string Frequency { get; set; } = "Weekly";
+        public DateTime? LastSentAt { get; set; }
+        public DateTime? NextSendAt { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
     }
 }

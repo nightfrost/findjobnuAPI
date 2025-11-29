@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace findjobnuAPI.Models
+namespace FindjobnuService.Models
 {
     public class JobIndexPosts
     {
@@ -17,8 +17,8 @@ namespace findjobnuAPI.Models
         public string? JobUrl { get; set; } = string.Empty;
         public DateTime? Published { get; set; } = DateTime.UtcNow;
         public ICollection<Category> Categories { get; set; } = new List<Category>();
-        public Byte[]? BannerPicture { get; set; } = [];
-        public Byte[]? FooterPicture { get; set; } = [];
+        public byte[]? BannerPicture { get; set; } = [];
+        public byte[]? FooterPicture { get; set; } = [];
         public List<string>? Keywords { get; set; } = [];
     }
 }

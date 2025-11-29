@@ -135,7 +135,8 @@ namespace AuthService.Services
             }
 
             storedRefreshToken.Revoked = DateTime.UtcNow;
-            storedRefreshToken.ReplacedByToken = GenerateRefreshToken(); _dbContext.RefreshTokens.Update(storedRefreshToken);
+            storedRefreshToken.ReplacedByToken = GenerateRefreshToken();
+            _dbContext.RefreshTokens.Update(storedRefreshToken);
 
             var newAuthResponse = await GenerateAuthResponseAsync(user, storedRefreshToken.ReplacedByToken);
 
@@ -208,7 +209,17 @@ namespace AuthService.Services
 
             if (existingRefreshToken != null)
             {
+                // Use the provided token value and persist it as the new active refresh token for the user
                 refreshTokenValue = existingRefreshToken;
+                var replacementRefreshToken = new RefreshToken
+                {
+                    Token = refreshTokenValue,
+                    Expires = DateTime.UtcNow.AddDays(refreshTokenExpirationDays),
+                    UserId = user.Id,
+                    Created = DateTime.UtcNow
+                };
+                await _dbContext.RefreshTokens.AddAsync(replacementRefreshToken);
+                // Do not call SaveChanges here; the caller (e.g., RefreshTokenAsync) will persist the changes in a single transaction
             }
             else
             {
@@ -381,6 +392,40 @@ namespace AuthService.Services
                 LastLinkedInSync = user.LastLinkedInSync,
                 CreatedAt = user.CreatedAt
             };
+        }
+
+        public async Task<IdentityResult> LockoutUserAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return IdentityResult.Failed(new IdentityError { Description = "User not found." });
+            }
+
+            // Lockout indefinitely (or set a specific time)
+            user.LockoutEnd = DateTimeOffset.UtcNow.AddYears(100);
+            user.LockoutEnabled = true;
+            var result = await _userManager.UpdateAsync(user);
+            return result;
+        }
+
+        public async Task<IdentityResult> UpdatePasswordAsync(string userId, string oldPassword, string newPassword)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return IdentityResult.Failed(new IdentityError { Description = "User not found." });
+            }
+
+            var check = await _signInManager.CheckPasswordSignInAsync(user, oldPassword, lockoutOnFailure: false);
+            if (!check.Succeeded)
+            {
+                return IdentityResult.Failed(new IdentityError { Description = "Current password is incorrect." });
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+            return result;
         }
     }
 }

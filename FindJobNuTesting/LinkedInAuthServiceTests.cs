@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace AuthService.Tests.Services
+namespace FindjobnuTesting
 {
     public class LinkedInAuthServiceTests
     {

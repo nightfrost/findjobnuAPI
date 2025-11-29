@@ -1,13 +1,14 @@
-using findjobnuAPI.Models;
-using findjobnuAPI.Repositories.Context;
-using findjobnuAPI.DTOs;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using FindjobnuService.DTOs;
+using FindjobnuService.Repositories.Context;
+using FindjobnuService.Models;
 
-namespace findjobnuAPI.Services
+namespace FindjobnuService.Services
 {
     public class ProfileService(FindjobnuContext db, IJobIndexPostsService jobService) : IProfileService
     {
@@ -24,6 +25,7 @@ namespace findjobnuAPI.Services
                 .Include(p => p.Accomplishments)
                 .Include(p => p.Contacts)
                 .Include(p => p.Skills)
+                .Include(p => p.JobAgent)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.UserId == userId);
             if (profile == null) return null;
@@ -37,6 +39,17 @@ namespace findjobnuAPI.Services
                 CreatedAt = profile.CreatedAt,
                 SavedJobPosts = profile.SavedJobPosts,
                 Keywords = profile.Keywords,
+                HasJobAgent = profile.HasJobAgent,
+                JobAgent = profile.JobAgent == null ? null : new JobAgentDto
+                {
+                    Id = profile.JobAgent.Id,
+                    Enabled = profile.JobAgent.Enabled,
+                    Frequency = profile.JobAgent.Frequency.ToString(),
+                    LastSentAt = profile.JobAgent.LastSentAt,
+                    NextSendAt = profile.JobAgent.NextSendAt,
+                    CreatedAt = profile.JobAgent.CreatedAt,
+                    UpdatedAt = profile.JobAgent.UpdatedAt
+                },
                 BasicInfo = new BasicInfoDto
                 {
                     FirstName = profile.BasicInfo.FirstName,
@@ -120,7 +133,6 @@ namespace findjobnuAPI.Services
             if (entity == null)
                 return false;
 
-            // Update fields now in BasicInfo
             entity.BasicInfo.FirstName = profile.BasicInfo.FirstName;
             entity.BasicInfo.LastName = profile.BasicInfo.LastName;
             entity.BasicInfo.DateOfBirth = profile.BasicInfo.DateOfBirth;
@@ -135,7 +147,6 @@ namespace findjobnuAPI.Services
             entity.Keywords = profile.Keywords;
             entity.SavedJobPosts = profile.SavedJobPosts;
 
-            // Replace all related collections
             _db.Experiences.RemoveRange(entity.Experiences ?? []);
             if (profile.Experiences != null)
             {
@@ -255,7 +266,6 @@ namespace findjobnuAPI.Services
             return false;
         }
 
-        // Generic helper for single navigation property (e.g., BasicInfo)
         private async Task<TDto?> GetProfileSingleDataByUserIdAsync<TProperty, TDto>(
             string userId,
             System.Linq.Expressions.Expression<Func<Profile, TProperty>> includeExpression,
@@ -273,7 +283,6 @@ namespace findjobnuAPI.Services
             return mapFunc(property);
         }
 
-        // Generic helper for collection navigation property (e.g., Experiences, Skills, Educations)
         private async Task<List<TDto>> GetProfileCollectionDataByUserIdAsync<TProperty, TDto>(
             string userId,
             System.Linq.Expressions.Expression<Func<Profile, IEnumerable<TProperty>>> includeExpression,

@@ -1,7 +1,7 @@
-﻿using findjobnuAPI.Models;
+﻿using FindjobnuService.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace findjobnuAPI.Services
+namespace FindjobnuService.Services
 {
     public interface IJobIndexPostsService
     {

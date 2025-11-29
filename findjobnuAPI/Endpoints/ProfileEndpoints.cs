@@ -1,12 +1,13 @@
-using findjobnuAPI.Services;
-using findjobnuAPI.Models;
-using findjobnuAPI.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.OpenApi;
 using System.Security.Claims;
+using FindjobnuService.DTOs;
+using FindjobnuService.Models;
+using FindjobnuService.Services;
+using FindjobnuService.DTOs.Requests;
 
-namespace findjobnuAPI
+namespace FindjobnuService.Endpoints
 {
     public static class ProfileEndpoints
     {
@@ -25,23 +26,30 @@ namespace findjobnuAPI
             .WithName("GetProfileByUserId")
             .WithOpenApi();
 
-            group.MapPost("/", async Task<Results<Ok<Profile>, ForbidHttpResult, BadRequest<string>>> (Profile profile, HttpContext ctx, IProfileService service) =>
+            group.MapPost("/", async Task<Results<Ok<ProfileDto>, ForbidHttpResult, BadRequest<string>>> (ProfileCreateRequest request, HttpContext ctx, IProfileService service) =>
             {
                 var authedUserId = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(authedUserId) || authedUserId != profile.UserId)
+                if (string.IsNullOrEmpty(authedUserId) || authedUserId != request.UserId)
                     return TypedResults.Forbid();
-                var created = await service.CreateAsync(profile);
-                return created != null ? TypedResults.Ok(created) : TypedResults.BadRequest("Could not create profile");
+                var created = await service.CreateAsync(new Profile
+                {
+                    UserId = request.UserId,
+                });
+                var dto = await service.GetByUserIdAsync(request.UserId);
+                return created != null && dto != null ? TypedResults.Ok(dto) : TypedResults.BadRequest("Could not create profile");
             })
             .WithName("CreateProfile")
             .WithOpenApi();
 
-            group.MapPut("/{id}", async Task<Results<Ok, ForbidHttpResult>> (int id, Profile profile, HttpContext ctx, IProfileService service) =>
+            group.MapPut("/{id}", async Task<Results<Ok, ForbidHttpResult>> (int id, ProfileUpdateRequest request, HttpContext ctx, IProfileService service) =>
             {
                 var authedUserId = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(authedUserId) || authedUserId != profile.UserId)
+                if (string.IsNullOrEmpty(authedUserId) || authedUserId != request.UserId)
                     return TypedResults.Forbid();
-                var ok = await service.UpdateAsync(id, profile, authedUserId);
+                var ok = await service.UpdateAsync(id, new Profile
+                {
+                    UserId = request.UserId,
+                }, authedUserId);
                 return ok ? TypedResults.Ok() : TypedResults.Forbid();
             })
             .WithName("UpdateProfile")
@@ -80,7 +88,7 @@ namespace findjobnuAPI
             .WithName("RemoveSavedJobForUser")
             .WithOpenApi();
 
-            group.MapPost("/linkedin/import", async Task<Results<Ok<Profile>, UnauthorizedHttpResult, BadRequest<string>>> (HttpContext ctx, ILinkedInProfileService linkedInService) =>
+            group.MapPost("/linkedin/import", async Task<Results<Ok<ProfileDto>, UnauthorizedHttpResult, BadRequest<string>>> (HttpContext ctx, ILinkedInProfileService linkedInService, IProfileService service) =>
             {
                 var userId = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId))
@@ -89,7 +97,8 @@ namespace findjobnuAPI
                 if (!result.Success)
                     return TypedResults.BadRequest(result.Error);
                 var saved = await linkedInService.SaveProfileAsync(userId, result.Profile!);
-                return saved ? TypedResults.Ok(result.Profile) : TypedResults.BadRequest("Failed to save imported profile");
+                var dto = await service.GetByUserIdAsync(userId);
+                return saved && dto != null ? TypedResults.Ok(dto) : TypedResults.BadRequest("Failed to save imported profile");
             })
             .WithName("ImportLinkedInProfile")
             .WithOpenApi();

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace findjobnuAPI.Models
+namespace FindjobnuService.Models
 {
     public class Category
     {

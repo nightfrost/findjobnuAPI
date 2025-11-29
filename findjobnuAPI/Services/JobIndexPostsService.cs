@@ -1,19 +1,22 @@
-﻿using findjobnuAPI.Models;
-using findjobnuAPI.Repositories.Context;
-using Humanizer.Localisation.DateToOrdinalWords;
+﻿using Humanizer.Localisation.DateToOrdinalWords;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Logging;
+using FindjobnuService.Repositories.Context;
+using FindjobnuService.Models;
 
-namespace findjobnuAPI.Services
+namespace FindjobnuService.Services
 {
     public class JobIndexPostsService : IJobIndexPostsService
     {
         private readonly FindjobnuContext _db;
+        private readonly ILogger<JobIndexPostsService> _logger;
 
-        public JobIndexPostsService(FindjobnuContext db)
+        public JobIndexPostsService(FindjobnuContext db, ILogger<JobIndexPostsService> logger)
         {
             _db = db;
+            _logger = logger;
         }
 
         public async Task<PagedList<JobIndexPosts>> GetAllAsync(int page, int pageSize)
@@ -51,6 +54,7 @@ namespace findjobnuAPI.Services
                     (j.JobDescription != null && j.JobDescription.Contains(searchTerm))
                 );
             }
+
             if (postedAfter.HasValue)
                 query = query.Where(j => j.Published >= postedAfter.Value);
             if (postedBefore.HasValue)
@@ -95,6 +99,7 @@ namespace findjobnuAPI.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Failed to get categories");
                 return new CategoriesResponse(false, ex.Message, []);
             }
         }

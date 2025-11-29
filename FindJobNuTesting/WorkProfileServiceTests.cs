@@ -1,21 +1,21 @@
 using Xunit;
-using findjobnuAPI.Services;
-using findjobnuAPI.Models;
-using findjobnuAPI.Repositories.Context;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using Moq;
+using FindjobnuService.Repositories.Context;
+using FindjobnuService.Models;
+using FindjobnuService.Services;
 
-namespace findjobnuAPI.Tests.Services
+namespace FindjobnuTesting
 {
     public class ProfileServiceTests
     {
         private ProfileService GetServiceWithInMemoryDb(out FindjobnuContext context)
         {
             var options = new DbContextOptionsBuilder<FindjobnuContext>()
-                .UseInMemoryDatabase(databaseName: System.Guid.NewGuid().ToString())
+                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
             context = new FindjobnuContext(options);
             var jobServiceMock = new Mock<IJobIndexPostsService>();

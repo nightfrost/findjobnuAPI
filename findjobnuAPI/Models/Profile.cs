@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 
-namespace findjobnuAPI.Models
+namespace FindjobnuService.Models
 {
     /// <summary>
     /// Combined profile data (merges UserProfile and WorkProfile)
@@ -26,6 +26,8 @@ namespace findjobnuAPI.Models
         public ICollection<Accomplishment>? Accomplishments { get; set; } = new List<Accomplishment>();
         public ICollection<Contact>? Contacts { get; set; } = new List<Contact>();
         public ICollection<Skill>? Skills { get; set; } = new List<Skill>();
+        public bool HasJobAgent { get; set; } = false;
+        public JobAgent? JobAgent { get; set; }
     }
 
     [Owned]

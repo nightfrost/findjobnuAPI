@@ -1,7 +1,7 @@
-using findjobnuAPI.DTOs;
-using findjobnuAPI.Models;
+using FindjobnuService.DTOs;
+using FindjobnuService.Models;
 
-namespace findjobnuAPI.Services
+namespace FindjobnuService.Services
 {
     public interface IProfileService
     {

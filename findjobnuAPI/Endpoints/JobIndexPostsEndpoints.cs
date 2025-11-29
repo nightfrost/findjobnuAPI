@@ -1,14 +1,16 @@
-﻿using findjobnuAPI.Models;
-using findjobnuAPI.Services;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
-using findjobnuAPI.DTOs;
+using FindjobnuService.Models;
+using FindjobnuService.Services;
+using DTORequest = FindjobnuService.DTOs.Requests.JobIndexPostsSearchRequest;
+using FindjobnuService.DTOs.Responses;
+using FindjobnuService.Mappers;
 
-namespace findjobnuAPI.Endpoints;
+namespace FindjobnuService.Endpoints;
 
 public static class JobIndexPostsEndpoints
 {
@@ -16,19 +18,20 @@ public static class JobIndexPostsEndpoints
     {
         var group = routes.MapGroup("/api/jobindexposts").WithTags(nameof(JobIndexPosts));
 
-        group.MapGet("/", async Task<Results<Ok<PagedList<JobIndexPosts>>, NoContent>> (
+        group.MapGet("/", async Task<Results<Ok<PagedResponse<JobIndexPostResponse>>, NoContent>> (
             [FromServices] IJobIndexPostsService service, 
             [FromQuery] int page = 1, 
             [FromQuery] int pageSize = 10) =>
         {
             var pagedList = await service.GetAllAsync(page, pageSize);
-            return pagedList.Items.Any() ? TypedResults.Ok(pagedList) : TypedResults.NoContent();
+            var dto = JobIndexPostsMapper.ToPagedDto(pagedList);
+            return dto.Items.Any() ? TypedResults.Ok(dto) : TypedResults.NoContent();
         })
         .WithName("GetAllJobPosts")
         .WithOpenApi();
 
-        group.MapGet("/search", async Task<Results<Ok<PagedList<JobIndexPosts>>, NoContent>> (
-            [AsParameters] JobIndexPostsSearchRequest request,
+        group.MapGet("/search", async Task<Results<Ok<PagedResponse<JobIndexPostResponse>>, NoContent>> (
+            [AsParameters] DTORequest request,
             [FromServices] IJobIndexPostsService service) =>
         {
             var pagedList = await service.SearchAsync(
@@ -39,16 +42,17 @@ public static class JobIndexPostsEndpoints
                 request.PostedBefore,
                 request.Page);
 
-            return pagedList.Items.Any() ? TypedResults.Ok(pagedList) : TypedResults.NoContent();
+            var dto = JobIndexPostsMapper.ToPagedDto(pagedList);
+            return dto.Items.Any() ? TypedResults.Ok(dto) : TypedResults.NoContent();
         })
         .WithName("GetJobPostsBySearch")
         .WithOpenApi();
 
-        group.MapGet("/{id}", async Task<Results<Ok<JobIndexPosts>, NoContent>> (int id, [FromServices] IJobIndexPostsService service) =>
+        group.MapGet("/{id}", async Task<Results<Ok<JobIndexPostResponse>, NoContent>> (int id, [FromServices] IJobIndexPostsService service) =>
         {
             var jobPost = await service.GetByIdAsync(id);
 
-            return !jobPost.JobUrl.IsNullOrEmpty() ? TypedResults.Ok(jobPost) : TypedResults.NoContent();
+            return !jobPost.JobUrl.IsNullOrEmpty() ? TypedResults.Ok(JobIndexPostsMapper.ToDto(jobPost)) : TypedResults.NoContent();
         })
         .WithName("GetJobPostsById")
         .WithOpenApi();
@@ -61,7 +65,7 @@ public static class JobIndexPostsEndpoints
         .WithName("GetJobCategories")
         .WithOpenApi();
 
-        group.MapGet("/saved", async Task<Results<Ok<PagedList<JobIndexPosts>>, UnauthorizedHttpResult, NoContent>> (
+        group.MapGet("/saved", async Task<Results<Ok<PagedResponse<JobIndexPostResponse>>, UnauthorizedHttpResult, NoContent>> (
             [FromQuery] int page, 
             HttpContext httpContext, 
             [FromServices] IJobIndexPostsService service) =>
@@ -71,14 +75,15 @@ public static class JobIndexPostsEndpoints
                 return TypedResults.Unauthorized();
 
             var pagedList = await service.GetSavedJobsByUserId(userId, page);
-            return pagedList?.Items.Count() >= 0 ? TypedResults.Ok(pagedList) :
+            var dto = JobIndexPostsMapper.ToPagedDto(pagedList!);
+            return dto.Items.Count >= 0 ? TypedResults.Ok(dto) :
                 TypedResults.NoContent();
         })
         .RequireAuthorization()
         .WithName("GetSavedJobPostsByUser")
         .WithOpenApi();
 
-        group.MapGet("/recommended-jobs", async Task<Results<Ok<PagedList<JobIndexPosts>>, UnauthorizedHttpResult, BadRequest<string>, NoContent>> (
+        group.MapGet("/recommended-jobs", async Task<Results<Ok<PagedResponse<JobIndexPostResponse>>, UnauthorizedHttpResult, BadRequest<string>, NoContent>> (
             [FromQuery] int page, 
             HttpContext httpContext, 
             [FromServices] IJobIndexPostsService jobService, 
@@ -89,7 +94,8 @@ public static class JobIndexPostsEndpoints
                 return TypedResults.Unauthorized();
 
             var pagedList = await jobService.GetRecommendedJobsByUserAndProfile(userId, page);
-            return pagedList?.Items.Any() == true ? TypedResults.Ok(pagedList) :
+            var dto = JobIndexPostsMapper.ToPagedDto(pagedList!);
+            return dto.Items.Any() ? TypedResults.Ok(dto) :
                 TypedResults.NoContent();
         })
         .RequireAuthorization()

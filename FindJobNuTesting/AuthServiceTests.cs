@@ -11,7 +11,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace AuthService.Tests.Services
+namespace FindjobnuTesting
 {
     public class AuthServiceTests
     {

@@ -1,11 +1,11 @@
-﻿using findjobnuAPI.Models;
+﻿using FindjobnuService.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Newtonsoft.Json;
 
 
-namespace findjobnuAPI.Repositories.Context
+namespace FindjobnuService.Repositories.Context
 {
     public class FindjobnuContext(DbContextOptions<FindjobnuContext> options) : DbContext(options)
     {
@@ -19,6 +19,27 @@ namespace findjobnuAPI.Repositories.Context
         public DbSet<Accomplishment> Accomplishments { get; set; }
         public DbSet<Contact> Contacts { get; set; }
         public DbSet<Skill> Skills { get; set; }
+        public DbSet<JobKeyword> JobKeywords { get; set; }
+        public DbSet<JobAgent> JobAgents { get; set; }
+
+        private static class ListStringConverterHelpers
+        {
+            public static string? ToCsv(List<string>? v) => v == null ? null : string.Join(",", v);
+            public static List<string> FromCsv(string? v) => string.IsNullOrWhiteSpace(v) ? new List<string>() : v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+
+            public static string? ToJson(List<string>? v) => v == null ? null : JsonConvert.SerializeObject(v);
+            public static List<string> FromJsonWithCsvFallback(string? v)
+            {
+                if (string.IsNullOrWhiteSpace(v)) return new List<string>();
+                try
+                {
+                    var list = JsonConvert.DeserializeObject<List<string>>(v);
+                    if (list != null) return list;
+                }
+                catch { }
+                return FromCsv(v);
+            }
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -102,6 +123,13 @@ namespace findjobnuAPI.Repositories.Context
                 .HasMany(p => p.Skills)
                 .WithOne(e => e.Profile)
                 .HasForeignKey(e => e.ProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // One-to-one: Profile <-> JobAgent
+            modelBuilder.Entity<Profile>()
+                .HasOne(p => p.JobAgent)
+                .WithOne(ja => ja.Profile)
+                .HasForeignKey<JobAgent>(ja => ja.ProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }
