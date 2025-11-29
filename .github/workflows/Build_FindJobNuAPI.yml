@@ -45,7 +45,7 @@ jobs:
 
       - name: Publish AuthService for deployment
         run: dotnet publish AuthService/AuthService.csproj -c Release -o publish/AuthService
-                                                  
+                                                
       - name: Upload api build artifact
         uses: actions/upload-artifact@v4
         with:
