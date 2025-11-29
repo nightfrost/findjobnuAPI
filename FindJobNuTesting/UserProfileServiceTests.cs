@@ -1,13 +1,13 @@
 using Xunit;
-using findjobnuAPI.Services;
-using findjobnuAPI.Models;
-using findjobnuAPI.Repositories.Context;
+using FindjobnuService.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Moq;
+using FindjobnuService.Repositories.Context;
+using FindjobnuService.Services;
 
-namespace findjobnuAPI.Tests.Services
+namespace FindjobnuTesting
 {
     public class ProfileServiceTests_User
     {
@@ -26,7 +26,6 @@ namespace findjobnuAPI.Tests.Services
         {
             var service = GetServiceWithInMemoryDb(out var context);
             var profile = new Profile {
-                Id = 1,
                 UserId = "user1",
                 Keywords = new List<string> { "developer", "csharp" },
                 BasicInfo = new BasicInfo { FirstName = "John", LastName = "Doe" }

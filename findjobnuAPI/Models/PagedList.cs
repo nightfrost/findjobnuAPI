@@ -1,4 +1,4 @@
-﻿namespace findjobnuAPI.Models
+﻿namespace FindjobnuService.Models
 {
     public class PagedList<T> where T : class
     {

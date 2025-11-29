@@ -1,7 +1,7 @@
-﻿using findjobnuAPI.Models;
+﻿using FindjobnuService.Models;
 using System.Threading.Tasks;
 
-namespace findjobnuAPI.Services
+namespace FindjobnuService.Services
 {
     public interface ILinkedInProfileService
     {

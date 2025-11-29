@@ -1,12 +1,10 @@
-﻿using findjobnuAPI.Models;
-using findjobnuAPI.Repositories.Context;
-using System;
+using FindjobnuService.Models;
+using FindjobnuService.Repositories.Context;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
-using System.IO;
 using System.Text.Json;
-using System.Threading.Tasks;
 
-namespace findjobnuAPI.Services
+namespace FindjobnuService.Services
 {
     /// <summary>
     /// Service for importing LinkedIn profile data using the Python script

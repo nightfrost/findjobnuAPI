@@ -1,4 +1,6 @@
-﻿namespace AuthService.Models
+﻿using Microsoft.AspNetCore.Identity;
+
+namespace AuthService.Models
 {
     public interface IAuthService
     {
@@ -9,5 +11,7 @@
         Task<bool> ConfirmEmailAsync(string userId, string token);
         Task<Tuple<bool, string?>> IsLinkedInUserOrHasVerifiedTheirLinkedIn(string userId);
         Task<UserInformationResult> GetUserInformationAsync(string userId);
+        Task<IdentityResult> LockoutUserAsync(string userId);
+        Task<IdentityResult> UpdatePasswordAsync(string userId, string oldPassword, string newPassword);
     }
 }

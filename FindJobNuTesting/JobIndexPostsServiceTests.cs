@@ -4,11 +4,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
-using findjobnuAPI.Models;
-using findjobnuAPI.Repositories.Context;
-using findjobnuAPI.Services;
 
-namespace findjobnuAPI.Tests.Services
+using Moq;
+using FindjobnuService.Repositories.Context;
+using FindjobnuService.Models;
+using FindjobnuService.Services;
+using Microsoft.Extensions.Logging;
+
+namespace FindjobnuTesting
 {
     public class JobIndexPostsServiceTests
     {
@@ -34,7 +37,8 @@ namespace findjobnuAPI.Tests.Services
         public async Task GetAllAsync_ReturnsPagedList()
         {
             var context = GetDbContextWithData();
-            var service = new JobIndexPostsService(context);
+            var logger = new Mock<ILogger<JobIndexPostsService>>().Object;
+            var service = new JobIndexPostsService(context, logger);
 
             var result = await service.GetAllAsync(1, 10);
 
@@ -47,7 +51,8 @@ namespace findjobnuAPI.Tests.Services
         public async Task SearchAsync_FiltersByLocationAndCategory()
         {
             var context = GetDbContextWithData();
-            var service = new JobIndexPostsService(context);
+            var logger = new Mock<ILogger<JobIndexPostsService>>().Object;
+            var service = new JobIndexPostsService(context, logger);
 
             var result = await service.SearchAsync(null, "NY", "IT", null, null, 1);
 
@@ -60,7 +65,8 @@ namespace findjobnuAPI.Tests.Services
         public async Task GetByIdAsync_ReturnsCorrectJob()
         {
             var context = GetDbContextWithData();
-            var service = new JobIndexPostsService(context);
+            var logger = new Mock<ILogger<JobIndexPostsService>>().Object;
+            var service = new JobIndexPostsService(context, logger);
 
             var job = await service.GetByIdAsync(1);
 
@@ -72,7 +78,8 @@ namespace findjobnuAPI.Tests.Services
         public async Task GetCategoriesAsync_ReturnsDistinctCategories()
         {
             var context = GetDbContextWithData();
-            var service = new JobIndexPostsService(context);
+            var logger = new Mock<ILogger<JobIndexPostsService>>().Object;
+            var service = new JobIndexPostsService(context, logger);
 
             var response = await service.GetCategoriesAsync();
 
@@ -90,6 +97,7 @@ namespace findjobnuAPI.Tests.Services
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
             using var context = new FindjobnuContext(options);
+            var logger = new Mock<ILogger<JobIndexPostsService>>().Object;
             // Add categories
             var itCategory = new Category { Name = "IT" };
             context.Categories.Add(itCategory);
@@ -98,11 +106,11 @@ namespace findjobnuAPI.Tests.Services
             var job2 = new JobIndexPosts { JobID = 20, JobTitle = "QA", Categories = new List<Category> { itCategory }, JobLocation = "NY", Published = DateTime.UtcNow };
             context.JobIndexPosts.AddRange(job1, job2);
             // Add user with saved jobs
-            var user = new Profile { Id = 1, UserId = "userX", BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" }, SavedJobPosts = ["10", "20"] };
+            var user = new Profile { Id = 1, UserId = "userX", BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" }, SavedJobPosts = new List<string> { "10", "20" } };
             context.Profiles.Add(user);
             context.SaveChanges();
 
-            var service = new JobIndexPostsService(context);
+            var service = new JobIndexPostsService(context, logger);
             var pagedList = await service.GetSavedJobsByUserId("userX", 1);
 
             Assert.NotNull(pagedList);
@@ -117,11 +125,12 @@ namespace findjobnuAPI.Tests.Services
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
             using var context = new FindjobnuContext(options);
-            var user = new Profile { Id = 2, UserId = "userY", BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" }, SavedJobPosts = [] };
+            var logger = new Mock<ILogger<JobIndexPostsService>>().Object;
+            var user = new Profile { Id = 2, UserId = "userY", BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" }, SavedJobPosts = new List<string>() };
             context.Profiles.Add(user);
             context.SaveChanges();
 
-            var service = new JobIndexPostsService(context);
+            var service = new JobIndexPostsService(context, logger);
             var pagedList = await service.GetSavedJobsByUserId("userY", 1);
 
             Assert.NotNull(pagedList);
@@ -136,7 +145,8 @@ namespace findjobnuAPI.Tests.Services
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
             using var context = new FindjobnuContext(options);
-            var service = new JobIndexPostsService(context);
+            var logger = new Mock<ILogger<JobIndexPostsService>>().Object;
+            var service = new JobIndexPostsService(context, logger);
             var pagedList = await service.GetSavedJobsByUserId("no_such_user", 1);
             Assert.NotNull(pagedList);
             Assert.Equal(0, pagedList.TotalCount);
