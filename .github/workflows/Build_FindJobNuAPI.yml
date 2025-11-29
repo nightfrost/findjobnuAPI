@@ -19,26 +19,27 @@ jobs:
         with:
           dotnet-version: 8.0.x 
 
-      - name: Restore API dependencies
-        run: dotnet restore findjobnuAPI/FindjobnuService.csproj
+      - name: Detect solution file
+        id: sln
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOLUTION=$(git ls-files -z | tr '\0' '\n' | grep -E '\\.sln$' | head -n1)
+          if [ -z "$SOLUTION" ]; then
+            echo "No solution file tracked by git. Ensure the .sln is committed." >&2
+            exit 1
+          fi
+          echo "Found solution: $SOLUTION"
+          echo "solution=$SOLUTION" >> "$GITHUB_OUTPUT"
 
-      - name: Restore AuthService dependencies
-        run: dotnet restore AuthService/AuthService.csproj
+      - name: Restore (solution)
+        run: dotnet restore "${{ steps.sln.outputs.solution }}"
 
-      - name: Restore JobAgentWorker dependencies
-        run: dotnet restore JobAgentWorker/JobAgentWorkerService.csproj
+      - name: Build (solution)
+        run: dotnet build "${{ steps.sln.outputs.solution }}" --no-restore
 
-      - name: Build API
-        run: dotnet build findjobnuAPI/FindjobnuService.csproj --no-restore
-
-      - name: Build AuthService
-        run: dotnet build AuthService/AuthService.csproj --no-restore
-
-      - name: Build JobAgentWorker
-        run: dotnet build JobAgentWorker/JobAgentWorkerService.csproj --no-restore
-
-      - name: Test
-        run: dotnet test FindJobNuTesting/FindjobnuTesting.csproj --no-build --verbosity normal
+      - name: Test (solution)
+        run: dotnet test "${{ steps.sln.outputs.solution }}" --no-build --verbosity normal
 
       - name: Publish API for deployment
         run: dotnet publish findjobnuAPI/FindjobnuService.csproj -c Release -o publish/findjobnuAPI
