@@ -9,10 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      DB_HOST: ${{ secrets.DB_HOST }}
-      DB_USERNAME: ${{ secrets.DB_USERNAME }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,23 +20,19 @@ jobs:
 
       - name: Restore (solution)
         run: dotnet restore Findjobnu.sln
-        env:
-          ConnectionStrings__FindjobnuConnection: Server=${{ env.DB_HOST }};Initial Catalog=JobDB;Persist Security Info=False;User ID=${{ env.DB_USERNAME }};Password=${{ env.DB_PASSWORD }};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;
 
       - name: Build (solution)
         run: dotnet build Findjobnu.sln --no-restore
 
       - name: Test (solution)
         run: dotnet test Findjobnu.sln --no-build --verbosity normal
-        env:
-          ConnectionStrings__FindjobnuConnection: Server=${{ env.DB_HOST }};Initial Catalog=JobDB;Persist Security Info=False;User ID=${{ env.DB_USERNAME }};Password=${{ env.DB_PASSWORD }};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;
 
       - name: Publish API for deployment
         run: dotnet publish findjobnuAPI/FindjobnuService.csproj -c Release -o publish/findjobnuAPI
 
       - name: Publish AuthService for deployment
         run: dotnet publish AuthService/AuthService.csproj -c Release -o publish/AuthService
-                                                
+                                
       - name: Upload api build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -80,7 +72,7 @@ jobs:
           source: "./findjobnuAPI-downloaded-artifact/*" 
           target: "/var/www/findjobnu/publish" 
           strip_components: 1
-      
+    
       - name: Deploy AuthService application files via SCP
         uses: appleboy/scp-action@v0.1.7 
         with:
