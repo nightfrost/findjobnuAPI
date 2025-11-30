@@ -114,6 +114,10 @@ namespace FindjobnuService.Services
 
         public async Task<Profile?> CreateAsync(Profile profile)
         {
+            // Ensure non-nullable DB columns are set explicitly
+            profile.HasJobAgent = profile.JobAgent?.Enabled ?? false;
+            profile.BasicInfo ??= new BasicInfo();
+
             _db.Profiles.Add(profile);
             await _db.SaveChangesAsync();
             return profile;

@@ -31,9 +31,12 @@ namespace FindjobnuService.Endpoints
                 var authedUserId = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(authedUserId) || authedUserId != request.UserId)
                     return TypedResults.Forbid();
+
+                // Ensure HasJobAgent is explicitly set to false on creation to satisfy non-null DB constraint
                 var created = await service.CreateAsync(new Profile
                 {
                     UserId = request.UserId,
+                    HasJobAgent = false
                 });
                 var dto = await service.GetByUserIdAsync(request.UserId);
                 return created != null && dto != null ? TypedResults.Ok(dto) : TypedResults.BadRequest("Could not create profile");

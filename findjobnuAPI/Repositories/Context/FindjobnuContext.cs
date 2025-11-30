@@ -51,6 +51,10 @@ namespace FindjobnuService.Repositories.Context
             modelBuilder.Entity<Profile>()
                 .HasIndex(p => p.UserId)
                 .IsUnique();
+            // Ensure HasJobAgent defaults to false at DB level to avoid NULL insert issues
+            modelBuilder.Entity<Profile>()
+                .Property(p => p.HasJobAgent)
+                .HasDefaultValue(false);
 
             var keywordsConverter = new ValueConverter<List<string>?, string>(
                 v => v == null ? null : string.Join(",", v),
