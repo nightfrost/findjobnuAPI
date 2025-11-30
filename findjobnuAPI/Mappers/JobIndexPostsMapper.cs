@@ -12,7 +12,12 @@ public static class JobIndexPostsMapper
         model.JobLocation,
         model.JobUrl ?? string.Empty,
         model.Published ?? DateTime.MinValue,
-        model.Categories.FirstOrDefault()?.Name
+        model.Categories.FirstOrDefault()?.Name,
+        string.IsNullOrWhiteSpace(model.JobDescription) ? null : model.JobDescription,
+        model.CompanyURL,
+        model.BannerPicture,
+        model.FooterPicture,
+        model.Keywords
     );
 
     public static PagedResponse<JobIndexPostResponse> ToPagedDto(PagedList<JobIndexPosts> paged)

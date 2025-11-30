@@ -7,5 +7,10 @@ public record JobIndexPostResponse(
     string? Location,
     string JobUrl,
     DateTime PostedDate,
-    string? Category
+    string? Category,
+    string? Description,
+    string? CompanyUrl,
+    byte[]? BannerPicture,
+    byte[]? FooterPicture,
+    List<string>? Keywords
 );
