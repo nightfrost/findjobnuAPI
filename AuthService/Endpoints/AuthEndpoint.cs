@@ -170,6 +170,8 @@ namespace AuthService.Endpoints
                 {
                     return TypedResults.BadRequest(changeResult.Errors?.FirstOrDefault()?.Description ?? "Failed to update password.");
                 }
+                // Optional: revoke all tokens after password change
+                await authService.RevokeAllRefreshTokensAsync(userId);
                 return TypedResults.Ok("Password updated successfully");
             })
             .RequireAuthorization()
@@ -209,6 +211,76 @@ namespace AuthService.Endpoints
             .WithName("LockoutUser")
             .WithSummary("Locks out a user account.")
             .WithDescription("Locks out the specified user by userId. Requires authorization.");
+
+            // Change email (initiate)
+            authGroup.MapPost("/change-email", async Task<Results<Ok<string>, UnauthorizedHttpResult, BadRequest<string>, ForbidHttpResult>> (ChangeEmailRequest request, HttpContext context, IAuthService authService) =>
+            {
+                var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                    return TypedResults.Unauthorized();
+
+                if (request.UserId != userId)
+                    return TypedResults.Forbid();
+
+                var res = await authService.ChangeEmailAsync(request.UserId, request.NewEmail, request.CurrentPassword);
+                if (!res.Succeeded)
+                {
+                    return TypedResults.BadRequest(res.Errors?.FirstOrDefault()?.Description ?? "Failed to initiate email change.");
+                }
+                return TypedResults.Ok("Email change confirmation sent.");
+            })
+            .RequireAuthorization()
+            .WithOpenApi()
+            .Produces<string>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces<string>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status403Forbidden)
+            .WithName("ChangeEmail")
+            .WithSummary("Initiates an email change.")
+            .WithDescription("Sends a confirmation link to the new email. Requires current password.");
+
+            // Confirm change email (via emailed link)
+            authGroup.MapGet("/confirm-change-email", async ([FromQuery] string userId, [FromQuery] string newEmail, [FromQuery] string token, IAuthService authService) =>
+            {
+                var res = await authService.ConfirmChangeEmailAsync(userId, newEmail, token);
+                if (!res.Succeeded)
+                {
+                    return Results.BadRequest(new { message = res.Errors?.FirstOrDefault()?.Description ?? "Failed to confirm email change." });
+                }
+                return Results.Redirect("https://findjob.nu");
+            })
+            .WithOpenApi()
+            .Produces(StatusCodes.Status302Found)
+            .Produces(StatusCodes.Status400BadRequest)
+            .WithName("ConfirmChangeEmail")
+            .WithSummary("Confirms a user's email change.")
+            .WithDescription("Confirms the user's email change using the provided token and updates username.");
+
+            // Disable account (explicit)
+            authGroup.MapPost("/disable-account", async Task<Results<Ok<string>, UnauthorizedHttpResult, BadRequest<string>, ForbidHttpResult>> (DisableAccountRequest request, HttpContext context, IAuthService authService) =>
+            {
+                var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                    return TypedResults.Unauthorized();
+                if (request.UserId != userId)
+                    return TypedResults.Forbid();
+
+                var res = await authService.DisableAccountAsync(request.UserId, request.CurrentPassword);
+                if (!res.Succeeded)
+                {
+                    return TypedResults.BadRequest(res.Errors?.FirstOrDefault()?.Description ?? "Failed to disable account.");
+                }
+                return TypedResults.Ok("Account disabled.");
+            })
+            .RequireAuthorization()
+            .WithOpenApi()
+            .Produces<string>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces<string>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status403Forbidden)
+            .WithName("DisableAccount")
+            .WithSummary("Disables the current user account.")
+            .WithDescription("Locks out the user indefinitely and revokes all refresh tokens.");
         }
     }
 }

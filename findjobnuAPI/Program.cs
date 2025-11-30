@@ -9,6 +9,7 @@ using FindjobnuService.Services;
 using FindjobnuService.Repositories.Context;
 using FindjobnuService.Endpoints;
 using Microsoft.OpenApi.Models;
+using System.Text.RegularExpressions;
 
 namespace FindjobnuService
 {
@@ -115,7 +116,9 @@ namespace FindjobnuService
                 });
 
                 c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
-                c.CustomSchemaIds(type => type.FullName);
+
+                // Use custom schema ids that avoid invalid characters for OpenAPI tools (e.g., Java generators)
+                c.CustomSchemaIds(type => CreateSchemaId(type));
 
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
@@ -225,6 +228,36 @@ namespace FindjobnuService
             app.MapJobAgentEndpoints();
 
             app.Run();
+        }
+
+        private static string CreateSchemaId(Type type)
+        {
+            // Build a stable, valid schema id: Namespace.Nested.TypeOfArg1AndArg2...
+            static string Sanitize(string input)
+            {
+                var sb = new System.Text.StringBuilder(input.Length);
+                foreach (var ch in input)
+                {
+                    if (char.IsLetterOrDigit(ch) || ch == '.' || ch == '-' || ch == '_')
+                        sb.Append(ch);
+                }
+                return sb.ToString();
+            }
+
+            if (type.IsGenericType)
+            {
+                var genericTypeName = type.Name.Split('`')[0];
+                var argNames = type.GetGenericArguments().Select(CreateSchemaId);
+                var name = $"{genericTypeName}Of{string.Join("And", argNames)}";
+                var ns = type.Namespace ?? string.Empty;
+                var nestedPrefix = type.DeclaringType != null ? CreateSchemaId(type.DeclaringType) + "." : string.Empty;
+                return Sanitize(nestedPrefix + (string.IsNullOrEmpty(ns) ? string.Empty : ns + ".") + name);
+            }
+            else
+            {
+                var full = (type.FullName ?? type.Name).Replace('+', '.');
+                return Sanitize(full);
+            }
         }
     }
 }

@@ -13,5 +13,9 @@ namespace AuthService.Models
         Task<UserInformationResult> GetUserInformationAsync(string userId);
         Task<IdentityResult> LockoutUserAsync(string userId);
         Task<IdentityResult> UpdatePasswordAsync(string userId, string oldPassword, string newPassword);
+        Task<IdentityResult> ChangeEmailAsync(string userId, string newEmail, string currentPassword);
+        Task<IdentityResult> ConfirmChangeEmailAsync(string userId, string newEmail, string token);
+        Task<IdentityResult> DisableAccountAsync(string userId, string currentPassword);
+        Task RevokeAllRefreshTokensAsync(string userId);
     }
 }

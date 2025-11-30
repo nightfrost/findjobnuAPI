@@ -156,6 +156,10 @@ namespace FindjobnuService.Services
         {
             try
             {
+                // Ensure required fields are set to avoid NULL constraint errors
+                profile.BasicInfo ??= new BasicInfo();
+                profile.HasJobAgent = profile.JobAgent?.Enabled ?? false;
+
                 await _context.Profiles.AddAsync(profile);
                 var result = await _context.SaveChangesAsync();
                 return result > 0;

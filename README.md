@@ -3,7 +3,7 @@
 This solution consists of three main projects:
 
 - **findjobnuAPI**: ASP.NET Core Web API for managing and searching job postings, user profiles, saved jobs, and LinkedIn profile import.
-- **AuthService**: Authentication and authorization service using ASP.NET Core Identity, JWT, refresh tokens, email confirmation, and LinkedIn OAuth login/account linking.
+- **AuthService**: Authentication and authorization service using ASP.NET Core Identity, JWT, refresh tokens, email confirmation, LinkedIn OAuth login/account linking, and account settings management (password, email, disable).
 - **FindJobNuTesting**: Unit test project for API and service logic, using xUnit and Moq.
 
 ---
@@ -60,19 +60,48 @@ Handles authentication and authorization for the solution.
 - JWT access token and refresh token issuance
 - Email confirmation for new users
 - Token refresh and revocation endpoints
+- Account settings: change password, change email (2-step), disable account
 - ASP.NET Core Identity with Entity Framework Core
 - .NET 8, C# 12
 
-## Endpoints (examples)
+## Endpoints
 
+Authentication & Tokens:
 - `POST /api/auth/register` – Register a new user
 - `POST /api/auth/login` – Login and receive JWT/refresh token
 - `POST /api/auth/refresh-token` – Refresh JWT using a valid refresh token
-- `POST /api/auth/revoke-token` – Revoke a refresh token
-- `GET /api/auth/confirm-email` – Confirm user email
-- **LinkedIn OAuth:**
-  - `GET /api/auth/linkedin/login` – Redirect to LinkedIn OAuth login
-  - `GET /api/auth/linkedin/callback` – LinkedIn OAuth callback for login/account linking
+- `POST /api/auth/revoke-token?refreshToken=...` – Revoke a specific refresh token
+- `GET /api/auth/confirm-email?userId=...&token=...` – Confirm user email
+
+Account Settings:
+- `POST /api/auth/change-password` – Change password (requires old + new password)
+- `POST /api/auth/change-email` – Initiate email change (requires current password; sends confirmation link)
+- `GET /api/auth/confirm-change-email?userId=...&newEmail=...&token=...` – Confirm email change
+- `POST /api/auth/disable-account` – Disable (lock out) account and revoke all refresh tokens
+
+Information & Verification:
+- `GET /api/auth/user-info` – Get authenticated user profile info
+- `GET /api/auth/linkedin-verification/{userId}` – Check LinkedIn verification
+- `GET /api/auth/protected-data` – Example protected resource
+
+LinkedIn OAuth (if implemented):
+- `GET /api/auth/linkedin/login`
+- `GET /api/auth/linkedin/callback`
+
+## Account Settings Flow
+
+Change Password:
+1. Call `POST /api/auth/change-password` with current and new password
+2. All existing refresh tokens are revoked; user should re-authenticate as needed
+
+Change Email:
+1. Call `POST /api/auth/change-email` with current password and new email
+2. Confirmation link sent to new email
+3. User clicks `GET /api/auth/confirm-change-email` link -> email + username updated, tokens revoked
+
+Disable Account:
+1. Call `POST /api/auth/disable-account` with current password
+2. Account locked indefinitely; all tokens revoked
 
 ---
 
@@ -86,9 +115,13 @@ Unit test project for API and service logic.
 - Uses Moq for mocking dependencies
 - In-memory EF Core for fast, isolated tests
 - Code coverage via coverlet
+- Tests include authentication flows (register, login, token refresh) and new account settings (password change, email change confirmation, disable account)
 
 ## Running Tests
+
+```bash
 dotnet test FindJobNuTesting
+```
 ---
 
 # Getting Started
@@ -101,17 +134,23 @@ dotnet test FindJobNuTesting
 ## Configuration
 
 - Update `findjobnuAPI/appsettings.json` and `AuthService/appsettings.json` with your connection strings and JWT settings.
-- For AuthService, configure SMTP settings for email confirmation.
-- For LinkedIn features, configure LinkedIn OAuth credentials in `AuthService/appsettings.json` and LinkedIn credentials for profile import in `findjobnuAPI/appsettings.json`.
+- Configure SMTP settings in `AuthService/appsettings.json` for email confirmation and email change flows.
+- For LinkedIn features, configure LinkedIn OAuth credentials and data import settings.
 
 ## Build and Run
 
 To build the solution:
+```bash
 dotnet build
+```
 To run the main API:
+```bash
 dotnet run --project findjobnuAPI
+```
 To run the AuthService:
+```bash
 dotnet run --project AuthService
+```
 The APIs will be available at their configured URLs (see launch settings or console output).
 
 ## API Documentation
@@ -128,6 +167,7 @@ Swagger UI is available at `/swagger` for both findjobnuAPI and AuthService when
 - Microsoft.AspNetCore.OpenApi
 - Microsoft.AspNetCore.Authentication.JwtBearer
 - Microsoft.AspNetCore.Identity.EntityFrameworkCore
+- Serilog (logging)
 - Moq, xUnit, coverlet.collector (testing)
 
 ---

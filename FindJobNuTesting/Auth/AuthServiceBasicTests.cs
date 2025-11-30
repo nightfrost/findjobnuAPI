@@ -12,6 +12,8 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.DataProtection;
 
 namespace FindjobnuTesting.Auth
 {
@@ -19,22 +21,7 @@ namespace FindjobnuTesting.Auth
     {
         private (AuthService.Services.AuthService svc, ApplicationDbContext dbContext, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser>) Create()
         {
-            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseInMemoryDatabase(databaseName: System.Guid.NewGuid().ToString())
-                .Options;
-            var db = new ApplicationDbContext(options);
-
-            var store = new UserStore<ApplicationUser>(db);
-            var userManager = new UserManager<ApplicationUser>(store, null, new PasswordHasher<ApplicationUser>(), new List<IUserValidator<ApplicationUser>>(), new List<IPasswordValidator<ApplicationUser>> { new PasswordValidator<ApplicationUser>() }, null, null, null, new Mock<ILogger<UserManager<ApplicationUser>>>().Object);
-
-            var contextAccessor = new Mock<Microsoft.AspNetCore.Http.IHttpContextAccessor>();
-            var identityOptions = Options.Create(new IdentityOptions());
-            var claimsFactory = new UserClaimsPrincipalFactory<ApplicationUser>(userManager, identityOptions);
-            var signInLogger = new Mock<ILogger<SignInManager<ApplicationUser>>>().Object;
-            var schemeProvider = new Mock<IAuthenticationSchemeProvider>().Object;
-            var userConfirmation = new Mock<IUserConfirmation<ApplicationUser>>().Object;
-            var signInManager = new SignInManager<ApplicationUser>(userManager, contextAccessor.Object, claimsFactory, identityOptions, signInLogger, schemeProvider, userConfirmation);
-
+            var services = new ServiceCollection();
             var configData = new Dictionary<string, string?>
             {
                 {"JwtSettings:SecretKey", "supersecretkey1234567890asdasdasdasdasdasdasdasdasd"},
@@ -43,8 +30,26 @@ namespace FindjobnuTesting.Auth
                 {"JwtSettings:AccessTokenExpirationMinutes", "5"},
                 {"JwtSettings:RefreshTokenExpirationDays", "7"}
             };
-            var configuration = new ConfigurationBuilder().AddInMemoryCollection(configData!).Build();
-            var logger = new Mock<ILogger<AuthService.Services.AuthService>>().Object;
+            IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection(configData!).Build();
+
+            services.AddSingleton(configuration);
+            services.AddLogging();
+            services.AddHttpContextAccessor();
+            services.AddDbContext<ApplicationDbContext>(opts => opts.UseInMemoryDatabase(System.Guid.NewGuid().ToString()));
+            services.AddDataProtection().UseEphemeralDataProtectionProvider();
+            services.AddAuthentication(); // required for SignInManager dependencies
+            services.AddIdentityCore<ApplicationUser>(o => { })
+                .AddRoles<IdentityRole>()
+                .AddSignInManager() // register SignInManager
+                .AddEntityFrameworkStores<ApplicationDbContext>()
+                .AddDefaultTokenProviders();
+
+            var sp = services.BuildServiceProvider();
+            var scope = sp.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var signInManager = scope.ServiceProvider.GetRequiredService<SignInManager<ApplicationUser>>();
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<AuthService.Services.AuthService>>();
             var svc = new AuthService.Services.AuthService(userManager, signInManager, configuration, db, logger);
             return (svc, db, userManager, signInManager);
         }
@@ -94,6 +99,60 @@ namespace FindjobnuTesting.Auth
             var (svc, _, _, _) = Create();
             var ok = await svc.RevokeRefreshTokenAsync("nouser", "notoken");
             Assert.False(ok);
+        }
+
+        [Fact]
+        public async System.Threading.Tasks.Task ChangePassword_Succeeds_AndRevokesTokens()
+        {
+            var (svc, _, userManager, _) = Create();
+            var reg = await svc.RegisterAsync(new RegisterRequest { Email = "pw@t.com", Password = "Str0ngP@ss!", FirstName = "T", LastName = "U" });
+            Assert.True(reg.Success);
+            var user = await userManager.FindByEmailAsync("pw@t.com");
+            Assert.NotNull(user);
+
+            var res = await svc.UpdatePasswordAsync(user!.Id, "Str0ngP@ss!", "An0ther$trong1");
+            Assert.True(res.Succeeded);
+
+            var oldLogin = await svc.LoginAsync(new LoginRequest { Email = "pw@t.com", Password = "Str0ngP@ss!" });
+            Assert.False(oldLogin.Success);
+            var newLogin = await svc.LoginAsync(new LoginRequest { Email = "pw@t.com", Password = "An0ther$trong1" });
+            Assert.True(newLogin.Success);
+        }
+
+        [Fact]
+        public async System.Threading.Tasks.Task ConfirmChangeEmail_Succeeds()
+        {
+            var (svc, _, userManager, _) = Create();
+            var reg = await svc.RegisterAsync(new RegisterRequest { Email = "old@mail.com", Password = "Str0ngP@ss!", FirstName = "F", LastName = "L" });
+            Assert.True(reg.Success);
+            var user = await userManager.FindByEmailAsync("old@mail.com");
+            Assert.NotNull(user);
+
+            var newEmail = "new@mail.com";
+            var token = await userManager.GenerateChangeEmailTokenAsync(user!, newEmail);
+            var res = await svc.ConfirmChangeEmailAsync(user!.Id, newEmail, token);
+            Assert.True(res.Succeeded);
+
+            var updated = await userManager.FindByEmailAsync(newEmail);
+            Assert.NotNull(updated);
+            Assert.Equal(newEmail, updated!.Email);
+        }
+
+        [Fact]
+        public async System.Threading.Tasks.Task DisableAccount_LocksOutUser()
+        {
+            var (svc, _, userManager, _) = Create();
+            var reg = await svc.RegisterAsync(new RegisterRequest { Email = "disable@test.com", Password = "Str0ngP@ss!", FirstName = "D", LastName = "S" });
+            Assert.True(reg.Success);
+            var user = await userManager.FindByEmailAsync("disable@test.com");
+            Assert.NotNull(user);
+
+            var res = await svc.DisableAccountAsync(user!.Id, "Str0ngP@ss!");
+            Assert.True(res.Succeeded);
+
+            var refreshed = await userManager.FindByIdAsync(user.Id);
+            Assert.True(refreshed!.LockoutEnabled);
+            Assert.True(refreshed.LockoutEnd.HasValue);
         }
     }
 }
