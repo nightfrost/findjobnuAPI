@@ -137,6 +137,7 @@ namespace FindjobnuService.Services
             if (entity == null)
                 return false;
 
+            // Basic info
             entity.BasicInfo.FirstName = profile.BasicInfo.FirstName;
             entity.BasicInfo.LastName = profile.BasicInfo.LastName;
             entity.BasicInfo.DateOfBirth = profile.BasicInfo.DateOfBirth;
@@ -147,10 +148,13 @@ namespace FindjobnuService.Services
             entity.BasicInfo.JobTitle = profile.BasicInfo.JobTitle;
             entity.BasicInfo.LinkedinUrl = profile.BasicInfo.LinkedinUrl;
             entity.BasicInfo.OpenToWork = profile.BasicInfo.OpenToWork;
+
+            // Simple fields
             entity.LastUpdatedAt = DateTime.UtcNow;
             entity.Keywords = profile.Keywords;
             entity.SavedJobPosts = profile.SavedJobPosts;
 
+            // Collections
             _db.Experiences.RemoveRange(entity.Experiences ?? []);
             if (profile.Experiences != null)
             {
@@ -160,6 +164,7 @@ namespace FindjobnuService.Services
                     _db.Experiences.Add(exp);
                 }
             }
+
             _db.Educations.RemoveRange(entity.Educations ?? []);
             if (profile.Educations != null)
             {
@@ -169,6 +174,7 @@ namespace FindjobnuService.Services
                     _db.Educations.Add(edu);
                 }
             }
+
             _db.Interests.RemoveRange(entity.Interests ?? []);
             if (profile.Interests != null)
             {
@@ -178,6 +184,7 @@ namespace FindjobnuService.Services
                     _db.Interests.Add(interest);
                 }
             }
+
             _db.Accomplishments.RemoveRange(entity.Accomplishments ?? []);
             if (profile.Accomplishments != null)
             {
@@ -187,6 +194,7 @@ namespace FindjobnuService.Services
                     _db.Accomplishments.Add(acc);
                 }
             }
+
             _db.Contacts.RemoveRange(entity.Contacts ?? []);
             if (profile.Contacts != null)
             {
@@ -196,6 +204,7 @@ namespace FindjobnuService.Services
                     _db.Contacts.Add(contact);
                 }
             }
+
             _db.Skills.RemoveRange(entity.Skills ?? []);
             if (profile.Skills != null)
             {
