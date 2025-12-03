@@ -118,52 +118,14 @@ namespace FindjobnuService
 
             var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 
-            bool IsOriginAllowed(string origin)
-            {
-                if (!Uri.TryCreate(origin, UriKind.Absolute, out var o)) return false;
-
-                foreach (var pattern in allowedOrigins)
-                {
-                    if (string.IsNullOrWhiteSpace(pattern)) continue;
-
-                    if (pattern.Contains("*"))
-                    {
-                        if (pattern.StartsWith("https://*.", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var domain = pattern.Substring("https://*.".Length);
-                            if (string.Equals(o.Scheme, "https", StringComparison.OrdinalIgnoreCase) &&
-                                (string.Equals(o.Host, domain, StringComparison.OrdinalIgnoreCase) ||
-                                 o.Host.EndsWith("." + domain, StringComparison.OrdinalIgnoreCase)))
-                            {
-                                return true;
-                            }
-                        }
-                        continue;
-                    }
-
-                    if (Uri.TryCreate(pattern, UriKind.Absolute, out var p))
-                    {
-                        var schemeOk = string.Equals(o.Scheme, p.Scheme, StringComparison.OrdinalIgnoreCase);
-                        var hostOk = string.Equals(o.Host, p.Host, StringComparison.OrdinalIgnoreCase);
-                        var portOk = p.IsDefaultPort || p.Port == -1 || p.Port == o.Port;
-                        if (schemeOk && hostOk && portOk)
-                        {
-                            return true;
-                        }
-                    }
-                }
-
-                return false;
-            }
-
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("ConfiguredCors", policy =>
                 {
                     policy
+                        .WithOrigins(allowedOrigins)
                         .AllowAnyHeader()
-                        .AllowAnyMethod()
-                        .SetIsOriginAllowed(IsOriginAllowed);
+                        .AllowAnyMethod();
                 });
             });
 
