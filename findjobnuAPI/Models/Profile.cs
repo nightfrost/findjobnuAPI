@@ -82,7 +82,8 @@ namespace FindjobnuService.Models
     {
         [Key]
         public int Id { get; set; }
-        public string? Title { get; set; }
+        [Required]
+        public string Title { get; set; } = null!;
         public int ProfileId { get; set; }
         public Profile? Profile { get; set; }
     }

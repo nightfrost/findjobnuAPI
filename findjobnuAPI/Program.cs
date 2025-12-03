@@ -110,6 +110,7 @@ namespace FindjobnuService
 
             builder.Services.AddScoped<ICvReadabilityService, CvReadabilityService>();
             builder.Services.AddScoped<IJobAgentService, JobAgentService>();
+            builder.Services.AddScoped<ILinkedInProfileService, LinkedInProfileService>();
 
             // Register Swagger services for minimal APIs/endpoints
             builder.Services.AddEndpointsApiExplorer();
@@ -200,35 +201,6 @@ namespace FindjobnuService
             app.MapJobAgentEndpoints();
 
             app.Run();
-        }
-
-        private static string CreateSchemaId(Type type)
-        {
-            static string Sanitize(string input)
-            {
-                var sb = new System.Text.StringBuilder(input.Length);
-                foreach (var ch in input)
-                {
-                    if (char.IsLetterOrDigit(ch) || ch == '.' || ch == '-' || ch == '_')
-                        sb.Append(ch);
-                }
-                return sb.ToString();
-            }
-
-            if (type.IsGenericType)
-            {
-                var genericTypeName = type.Name.Split('`')[0];
-                var argNames = type.GetGenericArguments().Select(CreateSchemaId);
-                var name = $"{genericTypeName}Of{string.Join("And", argNames)}";
-                var ns = type.Namespace ?? string.Empty;
-                var nestedPrefix = type.DeclaringType != null ? CreateSchemaId(type.DeclaringType) + "." : string.Empty;
-                return Sanitize(nestedPrefix + (string.IsNullOrEmpty(ns) ? string.Empty : ns + ".") + name);
-            }
-            else
-            {
-                var full = (type.FullName ?? type.Name).Replace('+', '.');
-                return Sanitize(full);
-            }
         }
     }
 }

@@ -94,7 +94,7 @@ public static class JobIndexPostsEndpoints
 
             var pagedList = await service.GetSavedJobsByUserId(userId, page);
             var dto = JobIndexPostsMapper.ToPagedDto(pagedList!);
-            return dto.Items.Count > 0 ? TypedResults.Ok(dto) :
+            return dto.Items.Any() ? TypedResults.Ok(dto) :
                 TypedResults.NoContent();
         })
         .RequireAuthorization()
