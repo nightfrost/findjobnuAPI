@@ -145,22 +145,32 @@ namespace FindjobnuService.Services
 
             var keywords = GetKeywordsFromProfile(profile);
 
-            var baseQuery = _db.JobIndexPosts
+            // Narrow by recency only, then filter in memory by keywords/title/company
+            var narrowed = await _db.JobIndexPosts
                 .Include(j => j.Categories)
-                .Where(j => (j.Keywords != null && j.Keywords.Any(k => keywords.Contains(k)))
-                || (j.CompanyName != null && keywords.Contains(j.CompanyName))
-                || (j.JobTitle != null && keywords.Contains(j.JobTitle)))
-                .AsNoTracking();
+                .AsNoTracking()
+                .OrderByDescending(j => j.Published)
+                .Take(2000)
+                .ToListAsync();
 
-            var totalCount = await baseQuery.CountAsync();
+            var filtered = narrowed
+                .Where(j =>
+                    (j.Keywords != null && j.Keywords.Any(k => !string.IsNullOrWhiteSpace(k) && keywords.Contains(k)))
+                    || (j.CompanyName != null && keywords.Contains(j.CompanyName))
+                    || (j.JobTitle != null && keywords.Contains(j.JobTitle))
+                )
+                .ToList();
+
+            var totalCount = filtered.Count;
             if (totalCount == 0)
                 return new PagedList<JobIndexPosts>(0, pagesize, page, []);
 
-            var items = await baseQuery
+            var items = filtered
                 .OrderBy(j => j.JobID)
                 .Skip((page - 1) * pagesize)
                 .Take(pagesize)
-                .ToListAsync();
+                .ToList();
+
             return new PagedList<JobIndexPosts>(totalCount, pagesize, page, items);
         }
 
