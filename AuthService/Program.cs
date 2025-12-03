@@ -98,4 +98,4 @@ app.UseAuthorization();
 app.MapAuthEndpoints();
 app.MapLinkedInAuthEndpoints(); 
 
-await app.RunAsync();
+app.Run();
