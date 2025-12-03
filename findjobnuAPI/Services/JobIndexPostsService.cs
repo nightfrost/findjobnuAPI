@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Logging;
 using FindjobnuService.Repositories.Context;
 using FindjobnuService.Models;
+using System.Collections.ObjectModel;
 
 namespace FindjobnuService.Services
 {
@@ -89,7 +90,7 @@ namespace FindjobnuService.Services
                     .Select(c => new
                     {
                         c.Name,
-                        NumberOfJobs = c.JobIndexPosts.Count()
+                        NumberOfJobs = c.JobIndexPosts.Count
                     })
                     .OrderBy(x => x.Name)
                     .ToListAsync();
@@ -139,7 +140,7 @@ namespace FindjobnuService.Services
             if ((profile.Keywords == null || profile.Keywords.Count == 0)
                 && (profile.Experiences == null || profile.Experiences.Count == 0)
                 && (profile.Interests == null || profile.Interests.Count == 0)
-                && (profile.BasicInfo == null || profile.BasicInfo.JobTitle.IsNullOrEmpty()))
+                && (profile.BasicInfo == null || string.IsNullOrEmpty(profile.BasicInfo.JobTitle)))
                     return new PagedList<JobIndexPosts>(0, pagesize, page, []);
 
             var keywords = GetKeywordsFromProfile(profile);
@@ -166,14 +167,19 @@ namespace FindjobnuService.Services
         private static HashSet<string> GetKeywordsFromProfile(Profile profile)
         {
             var keywords = new HashSet<string>();
-            if (profile.Keywords != null)
-            {
-                foreach (var keyword in profile.Keywords)
-                {
-                    if (!string.IsNullOrWhiteSpace(keyword))
-                        keywords.Add(keyword);
-                }
-            }
+
+            profile.Keywords?.Where(kw => !string.IsNullOrWhiteSpace(kw))
+                    .ToList()
+                    .ForEach(kw => keywords.Add(kw));
+
+            profile.Interests?.Where(i => !string.IsNullOrWhiteSpace(i.Title))
+                    .ToList()
+                    .ForEach(i => keywords.Add(i.Title));
+
+            profile.Skills?.Where(s => !string.IsNullOrWhiteSpace(s.Name))
+                    .ToList()
+                    .ForEach(s => keywords.Add(s.Name));
+
             if (profile.BasicInfo != null)
             {
                 if (!string.IsNullOrWhiteSpace(profile.BasicInfo.JobTitle))
@@ -181,6 +187,7 @@ namespace FindjobnuService.Services
                 if (!string.IsNullOrWhiteSpace(profile.BasicInfo.Company))
                     keywords.Add(profile.BasicInfo.Company);
             }
+
             if (profile.Experiences != null)
             {
                 foreach (var exp in profile.Experiences)
@@ -191,22 +198,7 @@ namespace FindjobnuService.Services
                         keywords.Add(exp.Company);
                 }
             }
-            if (profile.Interests != null)
-            {
-                foreach (var interest in profile.Interests)
-                {
-                    if (!string.IsNullOrWhiteSpace(interest.Title))
-                        keywords.Add(interest.Title);
-                }
-            }
-            if (profile.Skills != null)
-            {
-                foreach (var skill in profile.Skills)
-                {
-                    if (!string.IsNullOrWhiteSpace(skill.Name))
-                        keywords.Add(skill.Name);
-                }
-            }
+
             return keywords;
         }
     }

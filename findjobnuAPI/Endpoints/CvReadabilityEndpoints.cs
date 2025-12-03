@@ -13,12 +13,13 @@ public static class CvReadabilityEndpoints
         var group = routes.MapGroup("/api/cv").WithTags("CV");
 
         group.MapPost("/analyze", async Task<Results<Ok<CvReadabilityResult>, BadRequest<string>>> (
-            [FromForm] IFormFile file,
+            [FromForm] UploadCvRequest request,
             [FromServices] ICvReadabilityService service,
             CancellationToken ct) =>
         {
             try
             {
+                var file = request.File;
                 if (file == null || file.Length == 0)
                 {
                     return TypedResults.BadRequest("No file uploaded.");
@@ -39,11 +40,10 @@ public static class CvReadabilityEndpoints
                 return TypedResults.BadRequest(ex.Message);
             }
         })
-        .Accepts<IFormFile>("multipart/form-data")
+        .Accepts<UploadCvRequest>("multipart/form-data")
         .Produces<CvReadabilityResult>(StatusCodes.Status200OK)
         .Produces<string>(StatusCodes.Status400BadRequest)
         .WithName("AnalyzeCvPdf")
-        .DisableAntiforgery()
-        .WithOpenApi();
+        .DisableAntiforgery();
     }
 }
