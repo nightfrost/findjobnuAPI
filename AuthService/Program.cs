@@ -117,12 +117,15 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("ConfiguredCors", policy =>
     {
-        policy
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .SetIsOriginAllowed(IsOriginAllowed);
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
+
+// Register Swagger services for minimal APIs/endpoints
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 builder.Services.AddAuthorization();
 builder.Services.AddHttpClient();
@@ -133,6 +136,9 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost
 });
+
+// Use CORS before auth/endpoints
+app.UseCors("ConfiguredCors");
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>
@@ -155,4 +161,4 @@ app.UseAuthorization();
 app.MapAuthEndpoints();
 app.MapLinkedInAuthEndpoints(); 
 
-app.Run();
+await app.RunAsync();
