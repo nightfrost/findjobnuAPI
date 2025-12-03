@@ -13,4 +13,5 @@ namespace FindjobnuService.DTOs
         /// </summary>
         [FromForm(Name = "file")]
         public IFormFile? File { get; set; }
+    }
 }
