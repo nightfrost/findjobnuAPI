@@ -8,12 +8,10 @@ using Serilog;
 using FindjobnuService.Services;
 using FindjobnuService.Repositories.Context;
 using FindjobnuService.Endpoints;
-using Microsoft.OpenApi.Models;
-using System.Text.RegularExpressions;
 
 namespace FindjobnuService
 {
-    public class Program
+    public partial class Program
     {
         public static void Main(string[] args)
         {
@@ -49,17 +47,26 @@ namespace FindjobnuService
             Log.Logger = loggerConfig.CreateLogger();
             builder.Host.UseSerilog();
 
-            var connectionString = builder.Configuration.GetConnectionString("FindjobnuConnection") ?? throw new InvalidConfigurationException("Connection string 'FindjobnuConnection' not found.");
-            builder.Services.AddDbContext<FindjobnuContext>(options =>
-                options.UseSqlServer(connectionString));
+            // Use InMemory for Testing, otherwise SQL Server
+            if (builder.Environment.IsEnvironment("Testing"))
+            {
+                builder.Services.AddDbContext<FindjobnuContext>(options =>
+                    options.UseInMemoryDatabase("IntegrationTestsDb"));
+            }
+            else
+            {
+                var connectionString = builder.Configuration.GetConnectionString("FindjobnuConnection") ?? throw new InvalidConfigurationException("Connection string 'FindjobnuConnection' not found.");
+                builder.Services.AddDbContext<FindjobnuContext>(options =>
+                    options.UseSqlServer(connectionString));
+            }
 
             var jwtSettings = builder.Configuration.GetSection("JwtSettings");
             var secretKey = jwtSettings["SecretKey"];
             var issuer = jwtSettings["Issuer"];
             var audience = jwtSettings["Audience"];
 
-            if (string.IsNullOrEmpty(secretKey) || 
-                string.IsNullOrEmpty(issuer) || 
+            if (string.IsNullOrEmpty(secretKey) ||
+                string.IsNullOrEmpty(issuer) ||
                 string.IsNullOrEmpty(audience))
             {
                 throw new InvalidConfigurationException("JWT settings are not properly configured in appsettings.json.");
@@ -74,8 +81,8 @@ namespace FindjobnuService
                         ValidateAudience = true,
                         ValidateLifetime = true,
                         ValidateIssuerSigningKey = true,
-                        ValidIssuer = issuer, 
-                        ValidAudience = audience, 
+                        ValidIssuer = issuer,
+                        ValidAudience = audience,
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
                     };
                 });
@@ -102,46 +109,11 @@ namespace FindjobnuService
             });
 
             builder.Services.AddScoped<ICvReadabilityService, CvReadabilityService>();
-
             builder.Services.AddScoped<IJobAgentService, JobAgentService>();
 
+            // Register Swagger services for minimal APIs/endpoints
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo
-                {
-                    Title = "FindjobnuService API",
-                    Version = "v1",
-                    Description = "API documentation for FindjobnuService"
-                });
-
-                c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
-
-                // Use custom schema ids that avoid invalid characters for OpenAPI tools (e.g., Java generators)
-                c.CustomSchemaIds(type => CreateSchemaId(type));
-
-                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-                {
-                    Description = "JWT Authorization header using the Bearer scheme. Enter only the token.",
-                    Type = SecuritySchemeType.Http,
-                    Scheme = "bearer",
-                    BearerFormat = "JWT"
-                });
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference
-                            {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        },
-                        new List<string>()
-                    }
-                });
-            });
+            builder.Services.AddSwaggerGen();
 
             var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 
@@ -217,7 +189,7 @@ namespace FindjobnuService
             {
                 app.UseHttpsRedirection();
             }
-            
+
             app.UseAuthentication();
             app.UseAuthorization();
 
@@ -232,7 +204,6 @@ namespace FindjobnuService
 
         private static string CreateSchemaId(Type type)
         {
-            // Build a stable, valid schema id: Namespace.Nested.TypeOfArg1AndArg2...
             static string Sanitize(string input)
             {
                 var sb = new System.Text.StringBuilder(input.Length);

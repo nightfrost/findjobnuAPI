@@ -13,28 +13,42 @@ namespace FindjobnuTesting.Integration
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            // Ensure test-friendly configuration: load env vars and disable MSSQL logging sink
+            // Force Testing environment early so Program uses the in-memory database
+            builder.UseEnvironment("Testing");
+
             builder.ConfigureAppConfiguration((context, cfg) =>
             {
                 cfg.AddEnvironmentVariables();
-                // Optional: add an in-memory override to force console-only logging
                 var overrides = new Dictionary<string, string>
                 {
-                    // Configure Serilog to use only Console in tests
                     {"Serilog:Using:0", "Serilog.Sinks.Console"},
                     {"Serilog:WriteTo:0:Name", "Console"},
-                    {"Serilog:MinimumLevel:Default", "Information"}
+                    {"Serilog:MinimumLevel:Default", "Information"},
+                    {"ConnectionStrings:FindjobnuConnection", string.Empty}
                 };
                 cfg.AddInMemoryCollection(overrides);
             });
 
             builder.ConfigureServices(services =>
             {
-                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<FindjobnuContext>));
-                if (descriptor != null)
+                // Remove existing DbContext registrations for FindjobnuContext
+                var dbContextDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<FindjobnuContext>));
+                if (dbContextDescriptor != null)
                 {
-                    services.Remove(descriptor);
+                    services.Remove(dbContextDescriptor);
                 }
+                var contextDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(FindjobnuContext));
+                if (contextDescriptor != null)
+                {
+                    services.Remove(contextDescriptor);
+                }
+                var factoryDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IDbContextFactory<FindjobnuContext>));
+                if (factoryDescriptor != null)
+                {
+                    services.Remove(factoryDescriptor);
+                }
+
+                // Register a single InMemory provider for tests
                 services.AddDbContext<FindjobnuContext>(options =>
                 {
                     options.UseInMemoryDatabase("IntegrationTestsDb");

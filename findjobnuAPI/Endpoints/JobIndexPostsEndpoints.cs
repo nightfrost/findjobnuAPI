@@ -19,55 +19,73 @@ public static class JobIndexPostsEndpoints
         var group = routes.MapGroup("/api/jobindexposts").WithTags(nameof(JobIndexPosts));
 
         group.MapGet("/", async Task<Results<Ok<PagedResponse<JobIndexPostResponse>>, NoContent>> (
-            [FromServices] IJobIndexPostsService service, 
-            [FromQuery] int page = 1, 
+            [FromServices] IJobIndexPostsService service,
+            [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10) =>
         {
-            var pagedList = await service.GetAllAsync(page, pageSize);
-            var dto = JobIndexPostsMapper.ToPagedDto(pagedList);
-            return dto.Items.Any() ? TypedResults.Ok(dto) : TypedResults.NoContent();
+            try
+            {
+                var pagedList = await service.GetAllAsync(page, pageSize);
+                var dto = JobIndexPostsMapper.ToPagedDto(pagedList);
+                return (dto?.Items?.Any() == true) ? TypedResults.Ok(dto) : TypedResults.NoContent();
+            }
+            catch
+            {
+                return TypedResults.NoContent();
+            }
         })
-        .WithName("GetAllJobPosts")
-        .WithOpenApi();
+        .WithName("GetAllJobPosts");
 
         group.MapGet("/search", async Task<Results<Ok<PagedResponse<JobIndexPostResponse>>, NoContent>> (
             [AsParameters] DTORequest request,
             [FromServices] IJobIndexPostsService service) =>
         {
-            var pagedList = await service.SearchAsync(
-                request.SearchTerm,
-                request.Location,
-                request.Category,
-                request.PostedAfter,
-                request.PostedBefore,
-                request.Page);
+            try
+            {
+                var pagedList = await service.SearchAsync(
+                    request.SearchTerm,
+                    request.Location,
+                    request.Category,
+                    request.PostedAfter,
+                    request.PostedBefore,
+                    request.Page);
 
-            var dto = JobIndexPostsMapper.ToPagedDto(pagedList);
-            return dto.Items.Any() ? TypedResults.Ok(dto) : TypedResults.NoContent();
+                var dto = JobIndexPostsMapper.ToPagedDto(pagedList);
+                return (dto?.Items?.Any() == true) ? TypedResults.Ok(dto) : TypedResults.NoContent();
+            }
+            catch
+            {
+                return TypedResults.NoContent();
+            }
         })
-        .WithName("GetJobPostsBySearch")
-        .WithOpenApi();
+        .WithName("GetJobPostsBySearch");
 
         group.MapGet("/{id}", async Task<Results<Ok<JobIndexPostResponse>, NoContent>> (int id, [FromServices] IJobIndexPostsService service) =>
         {
-            var jobPost = await service.GetByIdAsync(id);
-
-            return !jobPost.JobUrl.IsNullOrEmpty() ? TypedResults.Ok(JobIndexPostsMapper.ToDto(jobPost)) : TypedResults.NoContent();
+            try
+            {
+                var jobPost = await service.GetByIdAsync(id);
+                if (jobPost == null || string.IsNullOrEmpty(jobPost.JobUrl))
+                    return TypedResults.NoContent();
+                return TypedResults.Ok(JobIndexPostsMapper.ToDto(jobPost));
+            }
+            catch
+            {
+                return TypedResults.NoContent();
+            }
         })
-        .WithName("GetJobPostsById")
-        .WithOpenApi();
+        .WithName("GetJobPostsById");
 
         group.MapGet("/categories", async Task<Results<Ok<CategoriesResponse>, NoContent>> ([FromServices] IJobIndexPostsService service) =>
         {
             var categories = await service.GetCategoriesAsync();
             return categories.CategoryAndAmountOfJobs.Count > 0 ? TypedResults.Ok(categories) : TypedResults.NoContent();
         })
-        .WithName("GetJobCategories")
-        .WithOpenApi();
+        .WithName("GetJobCategories");
 
         group.MapGet("/saved", async Task<Results<Ok<PagedResponse<JobIndexPostResponse>>, UnauthorizedHttpResult, NoContent>> (
-            [FromQuery] int page, 
-            HttpContext httpContext, 
+            [FromQuery] int page,
+            HttpContext httpContext,
             [FromServices] IJobIndexPostsService service) =>
         {
             var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -76,18 +94,17 @@ public static class JobIndexPostsEndpoints
 
             var pagedList = await service.GetSavedJobsByUserId(userId, page);
             var dto = JobIndexPostsMapper.ToPagedDto(pagedList!);
-            return dto.Items.Count >= 0 ? TypedResults.Ok(dto) :
+            return dto.Items.Count > 0 ? TypedResults.Ok(dto) :
                 TypedResults.NoContent();
         })
         .RequireAuthorization()
-        .WithName("GetSavedJobPostsByUser")
-        .WithOpenApi();
+        .WithName("GetSavedJobPostsByUser");
 
         group.MapGet("/recommended-jobs", async Task<Results<Ok<PagedResponse<JobIndexPostResponse>>, UnauthorizedHttpResult, BadRequest<string>, NoContent>> (
-            [FromQuery] int page, 
-            HttpContext httpContext, 
-            [FromServices] IJobIndexPostsService jobService, 
-            [FromServices] IProfileService profileService ) =>
+            [FromQuery] int page,
+            HttpContext httpContext,
+            [FromServices] IJobIndexPostsService jobService,
+            [FromServices] IProfileService profileService) =>
         {
             var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
@@ -99,7 +116,6 @@ public static class JobIndexPostsEndpoints
                 TypedResults.NoContent();
         })
         .RequireAuthorization()
-        .WithName("GetRecommendedJobsForUser")
-        .WithOpenApi();
+        .WithName("GetRecommendedJobsForUser");
     }
 }

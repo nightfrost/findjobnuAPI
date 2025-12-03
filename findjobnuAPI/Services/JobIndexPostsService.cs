@@ -139,7 +139,7 @@ namespace FindjobnuService.Services
             if ((profile.Keywords == null || profile.Keywords.Count == 0)
                 && (profile.Experiences == null || profile.Experiences.Count == 0)
                 && (profile.Interests == null || profile.Interests.Count == 0)
-                && (profile.BasicInfo == null || profile.BasicInfo.JobTitle.IsNullOrEmpty()))
+                && (profile.BasicInfo == null || string.IsNullOrEmpty(profile.BasicInfo.JobTitle)))
                     return new PagedList<JobIndexPosts>(0, pagesize, page, []);
 
             var keywords = GetKeywordsFromProfile(profile);

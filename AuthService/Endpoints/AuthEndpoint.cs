@@ -21,7 +21,6 @@ namespace AuthService.Endpoints
                 }
                 return Results.Ok(registerResult.AuthResponse);
             })
-            .WithOpenApi()
             .Produces<AuthResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest)
             .WithName("Register")
@@ -37,7 +36,6 @@ namespace AuthService.Endpoints
                 }
                 return Results.Ok(authResponse.AuthResponse);
             })
-            .WithOpenApi()
             .Produces<AuthResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .WithName("Login")
@@ -54,7 +52,6 @@ namespace AuthService.Endpoints
                 }
                 return Results.Ok(authResponse);
             })
-            .WithOpenApi()
             .Produces<AuthResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .WithName("RefreshToken")
@@ -78,7 +75,6 @@ namespace AuthService.Endpoints
                 return Results.Ok(new { message = "Token revoked successfully." });
             })
             .RequireAuthorization()
-            .WithOpenApi()
             .Produces(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status400BadRequest)
@@ -94,7 +90,6 @@ namespace AuthService.Endpoints
                 return Results.Ok($"This is protected data. Only authenticated users can see this. Your ID: {userId}, Email: {userEmail}");
             })
             .RequireAuthorization() 
-            .WithOpenApi()
             .Produces<string>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .WithName("GetProtectedData")
@@ -110,7 +105,6 @@ namespace AuthService.Endpoints
                 }
                 return Results.BadRequest(new { message = "Email confirmation failed. Invalid token or user." });
             })
-            .WithOpenApi()
             .Produces(StatusCodes.Status302Found)
             .Produces(StatusCodes.Status400BadRequest)
             .WithName("ConfirmEmail")
@@ -126,7 +120,6 @@ namespace AuthService.Endpoints
                 }
                 return Results.NoContent();
             })
-            .WithOpenApi()
             .Produces(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status204NoContent)
             .WithName("Verify LinkedIn connection.")
@@ -142,7 +135,6 @@ namespace AuthService.Endpoints
                 return TypedResults.Ok(userInfo);
             })
             .RequireAuthorization()
-            .WithOpenApi()
             .Produces<UserInformationResult>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces<UserInformationResult>(StatusCodes.Status404NotFound)
@@ -175,7 +167,6 @@ namespace AuthService.Endpoints
                 return TypedResults.Ok("Password updated successfully");
             })
             .RequireAuthorization()
-            .WithOpenApi()
             .Produces<string>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces<string>(StatusCodes.Status400BadRequest)
@@ -205,7 +196,6 @@ namespace AuthService.Endpoints
                 return Results.Ok(new { message = "User locked out successfully." });
             })
             .RequireAuthorization()
-            .WithOpenApi()
             .Produces(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest)
             .WithName("LockoutUser")
@@ -230,7 +220,6 @@ namespace AuthService.Endpoints
                 return TypedResults.Ok("Email change confirmation sent.");
             })
             .RequireAuthorization()
-            .WithOpenApi()
             .Produces<string>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces<string>(StatusCodes.Status400BadRequest)
@@ -249,7 +238,6 @@ namespace AuthService.Endpoints
                 }
                 return Results.Redirect("https://findjob.nu");
             })
-            .WithOpenApi()
             .Produces(StatusCodes.Status302Found)
             .Produces(StatusCodes.Status400BadRequest)
             .WithName("ConfirmChangeEmail")
@@ -273,7 +261,6 @@ namespace AuthService.Endpoints
                 return TypedResults.Ok("Account disabled.");
             })
             .RequireAuthorization()
-            .WithOpenApi()
             .Produces<string>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces<string>(StatusCodes.Status400BadRequest)

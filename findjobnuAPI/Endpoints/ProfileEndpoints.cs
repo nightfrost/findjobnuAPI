@@ -24,8 +24,7 @@ namespace FindjobnuService.Endpoints
                 var profile = await service.GetByUserIdAsync(userId);
                 return profile != null ? TypedResults.Ok(profile) : TypedResults.NotFound();
             })
-            .WithName("GetProfileByUserId")
-            .WithOpenApi();
+            .WithName("GetProfileByUserId");
 
             group.MapPost("/", async Task<Results<Ok<ProfileDto>, ForbidHttpResult, BadRequest<string>>> (ProfileCreateRequest request, HttpContext ctx, IProfileService service) =>
             {
@@ -48,8 +47,7 @@ namespace FindjobnuService.Endpoints
                 var dto = await service.GetByUserIdAsync(request.UserId);
                 return created != null && dto != null ? TypedResults.Ok(dto) : TypedResults.BadRequest("Could not create profile");
             })
-            .WithName("CreateProfile")
-            .WithOpenApi();
+            .WithName("CreateProfile");
 
             group.MapPut("/{id}", async Task<Results<Ok, ForbidHttpResult>> (int id, ProfileUpdateRequest request, HttpContext ctx, IProfileService service) =>
             {
@@ -61,8 +59,7 @@ namespace FindjobnuService.Endpoints
                 var ok = await service.UpdateAsync(id, profile, authedUserId);
                 return ok ? TypedResults.Ok() : TypedResults.Forbid();
             })
-            .WithName("UpdateProfile")
-            .WithOpenApi();
+            .WithName("UpdateProfile");
 
             group.MapGet("/{userId}/savedjobs", async Task<Results<Ok<PagedList<JobIndexPosts>>, UnauthorizedHttpResult>> (string userId, HttpContext ctx, IProfileService service) =>
             {
@@ -72,8 +69,7 @@ namespace FindjobnuService.Endpoints
                 var jobs = await service.GetSavedJobsByUserIdAsync(userId);
                 return TypedResults.Ok(jobs);
             })
-            .WithName("GetSavedJobsByUserId")
-            .WithOpenApi();
+            .WithName("GetSavedJobsByUserId");
 
             group.MapPost("/{userId}/savedjobs/{jobId}", async Task<Results<Ok, ForbidHttpResult, BadRequest<string>>> (string userId, string jobId, HttpContext ctx, IProfileService service) =>
             {
@@ -83,8 +79,7 @@ namespace FindjobnuService.Endpoints
                 var ok = await service.SaveJobAsync(userId, jobId);
                 return ok ? TypedResults.Ok() : TypedResults.BadRequest("Could not save job");
             })
-            .WithName("SaveJobForUser")
-            .WithOpenApi();
+            .WithName("SaveJobForUser");
 
             group.MapDelete("/{userId}/savedjobs/{jobId}", async Task<Results<Ok, ForbidHttpResult, BadRequest<string>>> (string userId, string jobId, HttpContext ctx, IProfileService service) =>
             {
@@ -94,8 +89,7 @@ namespace FindjobnuService.Endpoints
                 var ok = await service.RemoveSavedJobAsync(userId, jobId);
                 return ok ? TypedResults.Ok() : TypedResults.BadRequest("Could not remove saved job");
             })
-            .WithName("RemoveSavedJobForUser")
-            .WithOpenApi();
+            .WithName("RemoveSavedJobForUser");
 
             group.MapPost("/linkedin/import", async Task<Results<Ok<ProfileDto>, UnauthorizedHttpResult, BadRequest<string>>> (HttpContext ctx, ILinkedInProfileService linkedInService, IProfileService service) =>
             {
@@ -109,8 +103,7 @@ namespace FindjobnuService.Endpoints
                 var dto = await service.GetByUserIdAsync(userId);
                 return saved && dto != null ? TypedResults.Ok(dto) : TypedResults.BadRequest("Failed to save imported profile");
             })
-            .WithName("ImportLinkedInProfile")
-            .WithOpenApi();
+            .WithName("ImportLinkedInProfile");
 
             group.MapGet("/{userId}/basicinfo", async Task<Results<Ok<BasicInfoDto>, ForbidHttpResult, NotFound>> (string userId, HttpContext ctx, IProfileService service) =>
             {
@@ -122,8 +115,7 @@ namespace FindjobnuService.Endpoints
                     return TypedResults.NotFound();
                 return TypedResults.Ok(dto);
             })
-            .WithName("GetBasicInfoByUserId")
-            .WithOpenApi();
+            .WithName("GetBasicInfoByUserId");
 
             group.MapGet("/{userId}/experience", async Task<Results<Ok<List<ExperienceDto>>, ForbidHttpResult, NotFound>> (string userId, HttpContext ctx, IProfileService service) =>
             {
@@ -135,8 +127,7 @@ namespace FindjobnuService.Endpoints
                     return TypedResults.NotFound();
                 return TypedResults.Ok(dtos);
             })
-            .WithName("GetExperienceByUserId")
-            .WithOpenApi();
+            .WithName("GetExperienceByUserId");
 
             group.MapGet("/{userId}/skills", async Task<Results<Ok<List<SkillDto>>, ForbidHttpResult, NotFound>> (string userId, HttpContext ctx, IProfileService service) =>
             {
@@ -148,8 +139,7 @@ namespace FindjobnuService.Endpoints
                     return TypedResults.NotFound();
                 return TypedResults.Ok(dtos);
             })
-            .WithName("GetSkillsByUserId")
-            .WithOpenApi();
+            .WithName("GetSkillsByUserId");
 
             group.MapGet("/{userId}/education", async Task<Results<Ok<List<EducationDto>>, ForbidHttpResult, NotFound>> (string userId, HttpContext ctx, IProfileService service) =>
             {
@@ -161,8 +151,7 @@ namespace FindjobnuService.Endpoints
                     return TypedResults.NotFound();
                 return TypedResults.Ok(dtos);
             })
-            .WithName("GetEducationByUserId")
-            .WithOpenApi();
+            .WithName("GetEducationByUserId");
         }
     }
 }
