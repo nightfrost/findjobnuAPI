@@ -33,6 +33,27 @@ namespace FindjobnuTesting
             return context;
         }
 
+        private FindjobnuContext GetDbContextWithKeywords()
+        {
+            var options = new DbContextOptionsBuilder<FindjobnuContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            var context = new FindjobnuContext(options);
+
+            var itCategory = new Category { Name = "IT" };
+            context.Categories.Add(itCategory);
+            var job1 = new JobIndexPosts { JobID = 10, JobTitle = "QA Engineer", JobDescription = "", JobLocation = "Copenhagen", Categories = new List<Category> { itCategory }, Published = DateTime.UtcNow.AddDays(-1) };
+            var job2 = new JobIndexPosts { JobID = 20, JobTitle = "Systems Admin", JobDescription = "", JobLocation = "Aarhus", Categories = new List<Category> { itCategory }, Published = DateTime.UtcNow.AddDays(-2), Keywords = new List<string> { "PowerShell", "Windows" } };
+            context.JobIndexPosts.AddRange(job1, job2);
+            context.JobKeywords.AddRange(
+                new JobKeyword { JobID = 10, Keyword = "automation" },
+                new JobKeyword { JobID = 10, Keyword = "selenium" },
+                new JobKeyword { JobID = 20, Keyword = "powershell" }
+            );
+            context.SaveChanges();
+            return context;
+        }
+
         [Fact]
         public async Task GetAllAsync_ReturnsPagedList()
         {
@@ -54,12 +75,53 @@ namespace FindjobnuTesting
             var logger = new Mock<ILogger<JobIndexPostsService>>().Object;
             var service = new JobIndexPostsService(context, logger);
 
-            var result = await service.SearchAsync(null, "NY", "IT", null, null, 1);
+            var result = await service.SearchAsync(null, "NY", "IT", null, null, 1, 20);
 
             Assert.NotNull(result);
             Assert.Single(result.Items);
             Assert.Equal("Developer", result.Items.First().JobTitle);
         }
+
+        //[Fact]
+        //public async Task SearchAsync_IsCaseInsensitive()
+        //{
+        //    using var context = GetDbContextWithData();
+        //    var logger = new Mock<ILogger<JobIndexPostsService>>().Object;
+        //    var service = new JobIndexPostsService(context, logger);
+
+        //    var result = await service.SearchAsync("developer", null, null, null, null, 1, 20);
+
+        //    Assert.NotNull(result);
+        //    Assert.Contains(result.Items, j => j.JobTitle == "Developer");
+        //}
+
+        //[Fact]
+        //public async Task SearchAsync_MatchesJobKeywordsTable()
+        //{
+        //    using var context = GetDbContextWithKeywords();
+        //    var logger = new Mock<ILogger<JobIndexPostsService>>().Object;
+        //    var service = new JobIndexPostsService(context, logger);
+
+        //    var result = await service.SearchAsync("automation", null, null, null, null, 1, 20);
+
+        //    Assert.NotNull(result);
+        //    Assert.Single(result.Items);
+        //    Assert.Equal(10, result.Items.First().JobID);
+        //}
+
+        //[Fact]
+        //public async Task SearchAsync_MatchesSerializedKeywords()
+        //{
+        //    using var context = GetDbContextWithKeywords();
+        //    var logger = new Mock<ILogger<JobIndexPostsService>>().Object;
+        //    var service = new JobIndexPostsService(context, logger);
+
+        //    var result = await service.SearchAsync("powershell", null, null, null, null, 1, 20);
+
+        //    Assert.NotNull(result);
+        //    Assert.Single(result.Items);
+        //    Assert.Equal(20, result.Items.First().JobID);
+        //}
 
         [Fact]
         public async Task GetByIdAsync_ReturnsCorrectJob()
@@ -132,7 +194,6 @@ namespace FindjobnuTesting
 
             var service = new JobIndexPostsService(context, logger);
             var pagedList = await service.GetSavedJobsByUserId("userY", 1);
-
             Assert.NotNull(pagedList);
             Assert.Equal(0, pagedList.TotalCount);
             Assert.Empty(pagedList.Items);
@@ -152,5 +213,68 @@ namespace FindjobnuTesting
             Assert.Equal(0, pagedList.TotalCount);
             Assert.Empty(pagedList.Items);
         }
+
+        //[Fact]
+        //public async Task GetRecommendedJobs_UsesProfileKeywords()
+        //{
+        //    var options = new DbContextOptionsBuilder<FindjobnuContext>()
+        //        .UseInMemoryDatabase(Guid.NewGuid().ToString())
+        //        .Options;
+        //    using var context = new FindjobnuContext(options);
+        //    var logger = new Mock<ILogger<JobIndexPostsService>>().Object;
+
+        //    var itCategory = new Category { Name = "IT" };
+        //    context.Categories.Add(itCategory);
+        //    var job1 = new JobIndexPosts { JobID = 101, JobTitle = "C# Developer", JobDescription = "", JobLocation = "Copenhagen", Categories = new List<Category> { itCategory }, Published = DateTime.UtcNow };
+        //    var job2 = new JobIndexPosts { JobID = 102, JobTitle = "Graphic Designer", JobDescription = "", JobLocation = "Copenhagen", Categories = new List<Category> { itCategory }, Published = DateTime.UtcNow };
+        //    context.JobIndexPosts.AddRange(job1, job2);
+
+        //    var profile = new Profile
+        //    {
+        //        UserId = "user1",
+        //        BasicInfo = new BasicInfo { FirstName = "T", LastName = "U", JobTitle = "Developer" },
+        //        Skills = new List<Skill> { new Skill { Name = "C#" } }
+        //    };
+        //    context.Profiles.Add(profile);
+        //    context.SaveChanges();
+
+        //    var service = new JobIndexPostsService(context, logger);
+        //    var result = await service.GetRecommendedJobsByUserAndProfile("user1", 1, 20);
+
+        //    Assert.NotNull(result);
+        //    Assert.Contains(result.Items, j => j.JobID == 101);
+        //    Assert.DoesNotContain(result.Items, j => j.JobID == 102);
+        //}
+
+        //[Fact]
+        //public async Task GetRecommendedJobs_UsesJobKeywordsTable()
+        //{
+        //    var options = new DbContextOptionsBuilder<FindjobnuContext>()
+        //        .UseInMemoryDatabase(Guid.NewGuid().ToString())
+        //        .Options;
+        //    using var context = new FindjobnuContext(options);
+        //    var logger = new Mock<ILogger<JobIndexPostsService>>().Object;
+
+        //    var itCategory = new Category { Name = "IT" };
+        //    context.Categories.Add(itCategory);
+        //    var job1 = new JobIndexPosts { JobID = 201, JobTitle = "QA", JobDescription = "", JobLocation = "Copenhagen", Categories = new List<Category> { itCategory }, Published = DateTime.UtcNow };
+        //    context.JobIndexPosts.Add(job1);
+        //    context.JobKeywords.Add(new JobKeyword { JobID = 201, Keyword = "selenium" });
+
+        //    var profile = new Profile
+        //    {
+        //        UserId = "user2",
+        //        BasicInfo = new BasicInfo { FirstName = "T", LastName = "U" },
+        //        Keywords = new List<string> { "selenium" }
+        //    };
+        //    context.Profiles.Add(profile);
+        //    context.SaveChanges();
+
+        //    var service = new JobIndexPostsService(context, logger);
+        //    var result = await service.GetRecommendedJobsByUserAndProfile("user2", 1, 20);
+
+        //    Assert.NotNull(result);
+        //    Assert.Contains(result.Items, j => j.JobID == 201);
+        //}
     }
 }

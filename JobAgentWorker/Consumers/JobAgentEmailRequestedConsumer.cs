@@ -65,7 +65,7 @@ namespace JobAgentWorkerService.Consumers
             }
 
             // Fetch top recommended jobs for this user; page 1
-            var recommended = await _jobs.GetRecommendedJobsByUserAndProfile(msg.UserId, 1);
+            var recommended = await _jobs.GetRecommendedJobsByUserAndProfile(msg.UserId, 1, 20);
             var items = recommended.Items?.Take(10).ToList() ?? [];
 
             if (items.Count == 0)

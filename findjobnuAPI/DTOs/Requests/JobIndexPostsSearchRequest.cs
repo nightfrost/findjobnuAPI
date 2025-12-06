@@ -8,5 +8,6 @@ public record JobIndexPostsSearchRequest(
     [property: MaxLength(100)] string? Category,
     DateTime? PostedAfter,
     DateTime? PostedBefore,
-    [property: Range(1, int.MaxValue)] int Page = 1
+    [property: Range(1, int.MaxValue)] int Page = 1,
+    [property: Range(1, 200)] int PageSize = 20
 );

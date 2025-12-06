@@ -48,7 +48,8 @@ public static class JobIndexPostsEndpoints
                     request.Category,
                     request.PostedAfter,
                     request.PostedBefore,
-                    request.Page);
+                    request.Page,
+                    request.PageSize);
 
                 var dto = JobIndexPostsMapper.ToPagedDto(pagedList);
                 return (dto?.Items?.Any() == true) ? TypedResults.Ok(dto) : TypedResults.NoContent();
@@ -104,13 +105,14 @@ public static class JobIndexPostsEndpoints
             [FromQuery] int page,
             HttpContext httpContext,
             [FromServices] IJobIndexPostsService jobService,
-            [FromServices] IProfileService profileService) =>
+            [FromServices] IProfileService profileService,
+            [FromQuery] int pageSize = 20) =>
         {
             var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return TypedResults.Unauthorized();
 
-            var pagedList = await jobService.GetRecommendedJobsByUserAndProfile(userId, page);
+            var pagedList = await jobService.GetRecommendedJobsByUserAndProfile(userId, page, pageSize);
             var dto = JobIndexPostsMapper.ToPagedDto(pagedList!);
             return dto.Items.Any() ? TypedResults.Ok(dto) :
                 TypedResults.NoContent();

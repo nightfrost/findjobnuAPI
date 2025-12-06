@@ -116,7 +116,6 @@ namespace FindjobnuService
 
             builder.Services.AddScoped<ICvReadabilityService, CvReadabilityService>();
             builder.Services.AddScoped<IJobAgentService, JobAgentService>();
-            builder.Services.AddScoped<ILinkedInProfileService, LinkedInProfileService>();
 
             // Register Swagger services for minimal APIs/endpoints
             builder.Services.AddEndpointsApiExplorer();
