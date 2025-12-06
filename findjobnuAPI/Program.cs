@@ -8,6 +8,8 @@ using Serilog;
 using FindjobnuService.Services;
 using FindjobnuService.Repositories.Context;
 using FindjobnuService.Endpoints;
+using Microsoft.AspNetCore.ResponseCompression;
+using System.IO.Compression;
 
 namespace FindjobnuService
 {
@@ -117,6 +119,22 @@ namespace FindjobnuService
             builder.Services.AddScoped<ICvReadabilityService, CvReadabilityService>();
             builder.Services.AddScoped<IJobAgentService, JobAgentService>();
 
+            // Response compression for payloads (enables Brotli/gzip)
+            builder.Services.AddResponseCompression(options =>
+            {
+                options.EnableForHttps = true;
+                options.Providers.Add<BrotliCompressionProvider>();
+                options.Providers.Add<GzipCompressionProvider>();
+            });
+            builder.Services.Configure<BrotliCompressionProviderOptions>(opts =>
+            {
+                opts.Level = CompressionLevel.Optimal;
+            });
+            builder.Services.Configure<GzipCompressionProviderOptions>(opts =>
+            {
+                opts.Level = CompressionLevel.Fastest; // secondary fallback
+            });
+
             // Register Swagger services for minimal APIs/endpoints
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
@@ -157,6 +175,9 @@ namespace FindjobnuService
             {
                 app.UseHttpsRedirection();
             }
+
+            // Enable response compression middleware
+            app.UseResponseCompression();
 
             app.UseAuthentication();
             app.UseAuthorization();
