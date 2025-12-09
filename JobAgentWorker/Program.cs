@@ -1,14 +1,11 @@
-using MassTransit;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Serilog;
-using Microsoft.EntityFrameworkCore;
 using FindjobnuService.Repositories.Context;
 using FindjobnuService.Services;
+using JobAgentWorkerService.Consumers;
 using JobAgentWorkerService.Repositories;
 using JobAgentWorkerService.Services;
-using JobAgentWorkerService.Consumers;
+using MassTransit;
+using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 var builder = Host.CreateApplicationBuilder(args);
 

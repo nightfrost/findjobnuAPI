@@ -1,11 +1,7 @@
-using Xunit;
-using System.Threading.Tasks;
-using System.IO;
-using Microsoft.AspNetCore.Http;
-using Moq;
 using FindjobnuService.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using System;
+using Moq;
 
 namespace FindjobnuTesting.CvReadability
 {

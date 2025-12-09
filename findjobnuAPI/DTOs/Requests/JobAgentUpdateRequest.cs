@@ -1,7 +1,7 @@
 namespace FindjobnuService.DTOs.Requests;
 
-using System.ComponentModel.DataAnnotations;
 using FindjobnuService.Models;
+using System.ComponentModel.DataAnnotations;
 
 public record JobAgentUpdateRequest(
     [property: Required] bool Enabled,

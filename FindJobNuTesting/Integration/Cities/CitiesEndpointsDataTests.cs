@@ -1,12 +1,8 @@
+using FindjobnuService.Repositories.Context;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
-using Xunit;
-using FindjobnuTesting.Integration;
-using FindjobnuService.Repositories.Context;
-using FindjobnuService.Models;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
 
 namespace FindjobnuTesting.Integration
 {

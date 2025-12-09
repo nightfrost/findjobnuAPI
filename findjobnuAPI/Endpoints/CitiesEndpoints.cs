@@ -1,16 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.OpenApi;
-using System.Globalization;
+﻿using FindjobnuService.DTOs.Responses;
+using FindjobnuService.Mappers;
 using FindjobnuService.Models;
 using FindjobnuService.Repositories.Context;
-using FindjobnuService.DTOs.Responses;
-using FindjobnuService.Mappers;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
 namespace FindjobnuService.Endpoints;
 
 public static class CitiesEndpoints
 {
-    public static void MapCitiesEndpoints (this IEndpointRouteBuilder routes)
+    public static void MapCitiesEndpoints(this IEndpointRouteBuilder routes)
     {
         var group = routes.MapGroup("/api/Cities").WithTags(nameof(Cities));
 

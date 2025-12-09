@@ -84,7 +84,7 @@ namespace FindjobnuService.DTOs
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
-        public int Proficiency { get; set; } 
+        public int Proficiency { get; set; }
     }
 
     public class JobAgentDto

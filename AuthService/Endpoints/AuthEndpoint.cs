@@ -10,7 +10,7 @@ namespace AuthService.Endpoints
         public static void MapAuthEndpoints(this WebApplication app)
         {
             var authGroup = app.MapGroup("/api/auth")
-                               .WithTags("Authentication"); 
+                               .WithTags("Authentication");
 
             authGroup.MapPost("/register", async (RegisterRequest request, IAuthService authService) =>
             {
@@ -42,13 +42,13 @@ namespace AuthService.Endpoints
             .WithSummary("Logs in an existing user.")
             .WithDescription("Authenticates a user with email and password, returning JWT and Refresh Token.");
 
-            
+
             authGroup.MapPost("/refresh-token", async (TokenRefreshRequest request, IAuthService authService) =>
             {
                 var authResponse = await authService.RefreshTokenAsync(request);
                 if (authResponse == null)
                 {
-                    return Results.Unauthorized(); 
+                    return Results.Unauthorized();
                 }
                 return Results.Ok(authResponse);
             })
@@ -89,7 +89,7 @@ namespace AuthService.Endpoints
                 var userEmail = context.User.FindFirst(ClaimTypes.Email)?.Value;
                 return Results.Ok($"This is protected data. Only authenticated users can see this. Your ID: {userId}, Email: {userEmail}");
             })
-            .RequireAuthorization() 
+            .RequireAuthorization()
             .Produces<string>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .WithName("GetProtectedData")

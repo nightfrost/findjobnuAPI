@@ -1,12 +1,10 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.OpenApi;
-using System.Security.Claims;
 using FindjobnuService.DTOs;
-using FindjobnuService.Models;
-using FindjobnuService.Services;
 using FindjobnuService.DTOs.Requests;
 using FindjobnuService.Mappers;
+using FindjobnuService.Models;
+using FindjobnuService.Services;
+using Microsoft.AspNetCore.Http.HttpResults;
+using System.Security.Claims;
 
 namespace FindjobnuService.Endpoints
 {

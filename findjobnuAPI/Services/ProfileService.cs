@@ -1,12 +1,7 @@
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using FindjobnuService.DTOs;
-using FindjobnuService.Repositories.Context;
 using FindjobnuService.Models;
+using FindjobnuService.Repositories.Context;
+using Microsoft.EntityFrameworkCore;
 
 namespace FindjobnuService.Services
 {
@@ -270,7 +265,7 @@ namespace FindjobnuService.Services
                 .FirstOrDefaultAsync(x => x.UserId == userId);
 
             if (profile == null || profile.SavedJobPosts == null) return false;
-            
+
             if (profile.SavedJobPosts.Remove(jobId))
             {
                 await _db.SaveChangesAsync();

@@ -1,15 +1,10 @@
-﻿using AuthService.Entities;
+﻿using AuthService.Data;
+using AuthService.Entities;
 using AuthService.Models;
-using AuthService.Data;
-using AuthService.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace FindjobnuTesting
 {

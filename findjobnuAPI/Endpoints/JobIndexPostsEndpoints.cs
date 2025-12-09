@@ -1,14 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.OpenApi;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using Microsoft.IdentityModel.Tokens;
+﻿using FindjobnuService.DTOs.Responses;
+using FindjobnuService.Mappers;
 using FindjobnuService.Models;
 using FindjobnuService.Services;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using DTORequest = FindjobnuService.DTOs.Requests.JobIndexPostsSearchRequest;
-using FindjobnuService.DTOs.Responses;
-using FindjobnuService.Mappers;
 
 namespace FindjobnuService.Endpoints;
 
@@ -27,6 +24,12 @@ public static class JobIndexPostsEndpoints
             {
                 var pagedList = await service.GetAllAsync(page, pageSize);
                 var dto = JobIndexPostsMapper.ToPagedDto(pagedList);
+
+                // Cache public list for short time
+                if (dto.Items.Any())
+                {
+                    routes.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("CacheHeaders");
+                }
                 return (dto?.Items?.Any() == true) ? TypedResults.Ok(dto) : TypedResults.NoContent();
             }
             catch
@@ -34,7 +37,8 @@ public static class JobIndexPostsEndpoints
                 return TypedResults.NoContent();
             }
         })
-        .WithName("GetAllJobPosts");
+        .WithName("GetAllJobPosts")
+        .CacheOutput(p => p.Expire(TimeSpan.FromMinutes(2))); // if using output caching
 
         group.MapGet("/search", async Task<Results<Ok<PagedResponse<JobIndexPostResponse>>, NoContent>> (
             [AsParameters] DTORequest request,

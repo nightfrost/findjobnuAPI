@@ -14,7 +14,7 @@ namespace AuthService.Entities
 
         public string? LinkedInId { get; set; } // Store LinkedIn ID if needed
         public bool IsLinkedInUser { get; set; } = false; // Flag to indicate if this user is from LinkedIn
-        public bool HasVerifiedLinkedIn { get; set; } = false; 
+        public bool HasVerifiedLinkedIn { get; set; } = false;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string? LinkedInProfileUrl { get; set; } = string.Empty;

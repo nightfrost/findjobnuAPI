@@ -1,6 +1,5 @@
 using FindjobnuService.DTOs;
 using FindjobnuService.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 

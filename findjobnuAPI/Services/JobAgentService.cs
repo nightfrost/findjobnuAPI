@@ -2,7 +2,6 @@ using FindjobnuService.Models;
 using FindjobnuService.Repositories.Context;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
-using Microsoft.Extensions.Logging;
 
 namespace FindjobnuService.Services
 {

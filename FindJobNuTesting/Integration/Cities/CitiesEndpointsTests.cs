@@ -1,6 +1,4 @@
 using System.Net;
-using Xunit;
-using FindjobnuTesting.Integration;
 
 namespace FindjobnuTesting.Integration.Cities
 {

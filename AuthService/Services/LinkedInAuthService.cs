@@ -1,15 +1,11 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text.Json;
-using System.Threading.Tasks;
+using AuthService.Entities;
 using AuthService.Models;
 using Microsoft.AspNetCore.Identity;
-using AuthService.Entities;
+using Microsoft.IdentityModel.Protocols.Configuration;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.IdentityModel.Protocols.Configuration;
+using System.Text.Json;
 
 namespace AuthService.Services
 {
@@ -194,7 +190,7 @@ namespace AuthService.Services
                 if (signInResult.Succeeded)
                 {
                     var authResponse = await _authService.LoginAsync(new LoginRequest { Email = email, Password = linkedInPassword }, isLinkedInUser: true);
-                    if (authResponse == null || authResponse.AuthResponse == null  || !authResponse.Success)
+                    if (authResponse == null || authResponse.AuthResponse == null || !authResponse.Success)
                         return Results.BadRequest("Failed to create auth response for new LinkedIn user.");
                     authResponse.AuthResponse.FindJobNuUri = findjobnuUri;
                     return RedirectIfSuccess(authResponse);
@@ -237,7 +233,7 @@ namespace AuthService.Services
                 return Results.BadRequest(loginResult.ErrorMessage);
             }
 
-            return Results.BadRequest("Login failed for an unknown reason.");   
+            return Results.BadRequest("Login failed for an unknown reason.");
         }
 
         public async Task<IResult> UnlinkLinkedInProfile(string userId)
@@ -255,7 +251,8 @@ namespace AuthService.Services
                 user.LinkedInProfileUrl = null;
                 user.LinkedInHeadline = null;
                 user.LockoutEnabled = true; // Lock the user account as it is not a findjob.nu user.
-            } else
+            }
+            else
             {
                 user.HasVerifiedLinkedIn = false;
                 user.LinkedInId = null;

@@ -1,15 +1,11 @@
-using System.Linq;
-using System.Threading.Tasks;
-using MassTransit;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
-using FindjobnuService.Repositories.Context;
 using FindjobnuService.MessageContracts;
+using FindjobnuService.Repositories.Context;
 using FindjobnuService.Services;
 using JobAgentWorkerService.Repositories;
 using JobAgentWorkerService.Services;
 using JobAgentWorkerService.Templates;
+using MassTransit;
+using Microsoft.EntityFrameworkCore;
 
 namespace JobAgentWorkerService.Consumers
 {

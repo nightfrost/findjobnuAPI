@@ -1,5 +1,4 @@
 using FindjobnuService.Models;
-using System.Threading.Tasks;
 
 namespace FindjobnuService.Services
 {

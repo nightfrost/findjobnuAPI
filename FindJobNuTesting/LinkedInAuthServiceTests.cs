@@ -1,24 +1,15 @@
-﻿using AuthService.Entities;
+﻿using AuthService.Data;
+using AuthService.Entities;
 using AuthService.Models;
-using AuthService.Data;
 using AuthService.Services;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Http;
 using Moq;
 using Moq.Protected;
-using System;
-using System.Collections.Generic;
 using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using Xunit;
-using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace FindjobnuTesting
 {

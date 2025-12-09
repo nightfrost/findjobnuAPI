@@ -1,8 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
-using Xunit;
-using FindjobnuTesting.Integration;
-using FindjobnuService.DTOs.Responses;
 
 namespace FindjobnuTesting.Integration.JobIndexPosts
 {

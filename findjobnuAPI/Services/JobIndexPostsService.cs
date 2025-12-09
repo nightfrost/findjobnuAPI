@@ -1,12 +1,7 @@
-﻿using Humanizer.Localisation.DateToOrdinalWords;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.Extensions.Logging;
+﻿using FindjobnuService.Models;
 using FindjobnuService.Repositories.Context;
-using FindjobnuService.Models;
-using System.Collections.ObjectModel;
-using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FindjobnuService.Services
 {
@@ -14,11 +9,19 @@ namespace FindjobnuService.Services
     {
         private readonly FindjobnuContext _db;
         private readonly ILogger<JobIndexPostsService> _logger;
+        private readonly IMemoryCache _cache;
 
-        public JobIndexPostsService(FindjobnuContext db, ILogger<JobIndexPostsService> logger)
+        public JobIndexPostsService(FindjobnuContext db, ILogger<JobIndexPostsService> logger, IMemoryCache cache)
         {
             _db = db;
             _logger = logger;
+            _cache = cache;
+        }
+
+        // Backward-compatible constructor used by worker/tests
+        public JobIndexPostsService(FindjobnuContext db, ILogger<JobIndexPostsService> logger)
+            : this(db, logger, new MemoryCache(new MemoryCacheOptions()))
+        {
         }
 
         public async Task<PagedList<JobIndexPosts>> GetAllAsync(int page, int pageSize)
@@ -43,6 +46,14 @@ namespace FindjobnuService.Services
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 20;
 
+            var cacheKey = $"search:{searchTerm}|{location}|{category}|{postedAfter:O}|{postedBefore:O}|{page}|{pageSize}";
+            if (_cache.TryGetValue<PagedList<JobIndexPosts>>(cacheKey, out var cached))
+            {
+                return cached;
+            }
+
+            PagedList<JobIndexPosts> result;
+
             if (_db.Database.IsSqlServer())
             {
                 var parts = new List<string>();
@@ -54,7 +65,6 @@ namespace FindjobnuService.Services
                 var off = (page - 1) * pageSize;
                 var take = pageSize;
 
-                string sql;
                 if (!string.IsNullOrWhiteSpace(ftQuery))
                 {
                     var baseSql = @"
@@ -100,10 +110,12 @@ JOIN dbo.JobIndexPostingsExtended j ON j.JobID = k.JobID";
                         .Select(j => j.JobID)
                         .CountAsync();
 
-                    return new PagedList<JobIndexPosts>(totalCountSql, pageSize, page, itemsSql);
+                    result = new PagedList<JobIndexPosts>(totalCountSql, pageSize, page, itemsSql);
                 }
                 else
                 {
+                    var off2 = (page - 1) * pageSize;
+                    var take2 = pageSize;
                     var baseSql = @"SELECT j.* FROM dbo.JobIndexPostingsExtended j WHERE 1=1";
                     if (postedAfter.HasValue)
                         baseSql += " AND j.Published >= {0}";
@@ -112,7 +124,7 @@ JOIN dbo.JobIndexPostingsExtended j ON j.JobID = k.JobID";
                     baseSql += " ORDER BY j.Published DESC OFFSET {2} ROWS FETCH NEXT {3} ROWS ONLY";
 
                     var itemsSql = await _db.JobIndexPosts
-                        .FromSqlRaw(baseSql, postedAfter ?? (object)DBNull.Value, postedBefore ?? (object)DBNull.Value, off, take)
+                        .FromSqlRaw(baseSql, postedAfter ?? (object)DBNull.Value, postedBefore ?? (object)DBNull.Value, off2, take2)
                         .Include(j => j.Categories)
                         .AsNoTracking()
                         .ToListAsync();
@@ -127,7 +139,7 @@ JOIN dbo.JobIndexPostingsExtended j ON j.JobID = k.JobID";
                         .FromSqlRaw(countSql, postedAfter ?? (object)DBNull.Value, postedBefore ?? (object)DBNull.Value)
                         .CountAsync();
 
-                    return new PagedList<JobIndexPosts>(totalCountSql, pageSize, page, itemsSql);
+                    result = new PagedList<JobIndexPosts>(totalCountSql, pageSize, page, itemsSql);
                 }
             }
             else
@@ -161,17 +173,29 @@ JOIN dbo.JobIndexPostingsExtended j ON j.JobID = k.JobID";
                 }
 
                 var total = await q.CountAsync();
-                if (total == 0) return new PagedList<JobIndexPosts>(0, pageSize, page, []);
+                if (total == 0)
+                {
+                    result = new PagedList<JobIndexPosts>(0, pageSize, page, []);
+                }
+                else
+                {
+                    var items = await q
+                        .OrderByDescending(j => j.Published)
+                        .Skip((page - 1) * pageSize)
+                        .Take(pageSize)
+                        .AsNoTracking()
+                        .ToListAsync();
 
-                var items = await q
-                    .OrderByDescending(j => j.Published)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .AsNoTracking()
-                    .ToListAsync();
-
-                return new PagedList<JobIndexPosts>(total, pageSize, page, items);
+                    result = new PagedList<JobIndexPosts>(total, pageSize, page, items);
+                }
             }
+
+            _cache.Set(cacheKey, result, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2)
+            });
+
+            return result;
         }
 
         public async Task<JobIndexPosts> GetByIdAsync(int id)
@@ -226,6 +250,14 @@ JOIN dbo.JobIndexPostingsExtended j ON j.JobID = k.JobID";
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 20;
 
+            var cacheKey = $"rec:{userId}:{page}:{pageSize}";
+            if (_cache.TryGetValue<PagedList<JobIndexPosts>>(cacheKey, out var cached))
+            {
+                return cached;
+            }
+
+            PagedList<JobIndexPosts> result;
+
             var profile = await _db.Profiles
                 .Include(p => p.BasicInfo)
                 .Include(p => p.Experiences)
@@ -242,7 +274,7 @@ JOIN dbo.JobIndexPostingsExtended j ON j.JobID = k.JobID";
                 && (profile.Experiences == null || profile.Experiences.Count == 0)
                 && (profile.Interests == null || profile.Interests.Count == 0)
                 && (profile.BasicInfo == null || string.IsNullOrEmpty(profile.BasicInfo.JobTitle)))
-                    return new PagedList<JobIndexPosts>(0, pageSize, page, []);
+                return new PagedList<JobIndexPosts>(0, pageSize, page, []);
 
             var keywords = GetKeywordsFromProfile(profile)
                 .Where(k => !string.IsNullOrWhiteSpace(k))
@@ -295,7 +327,7 @@ JOIN dbo.JobIndexPostingsExtended j ON j.JobID = k.JobID";
                     .Select(j => j.JobID)
                     .CountAsync();
 
-                return new PagedList<JobIndexPosts>(totalCount, pageSize, page, items);
+                result = new PagedList<JobIndexPosts>(totalCount, pageSize, page, items);
             }
             else
             {
@@ -322,8 +354,15 @@ JOIN dbo.JobIndexPostingsExtended j ON j.JobID = k.JobID";
                     .AsNoTracking()
                     .ToListAsync();
 
-                return new PagedList<JobIndexPosts>(total, pageSize, page, items);
+                result = new PagedList<JobIndexPosts>(total, pageSize, page, items);
             }
+
+            _cache.Set(cacheKey, result, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2)
+            });
+
+            return result;
         }
 
         private static HashSet<string> GetKeywordsFromProfile(Profile profile)

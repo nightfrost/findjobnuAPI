@@ -1,5 +1,5 @@
-using System.Text;
 using FindjobnuService.Models;
+using System.Text;
 
 namespace JobAgentWorkerService.Templates
 {

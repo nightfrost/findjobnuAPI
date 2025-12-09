@@ -1,10 +1,7 @@
-using Xunit;
-using System.Threading.Tasks;
 using FindjobnuService.Models;
 using FindjobnuService.Repositories.Context;
-using Microsoft.EntityFrameworkCore;
 using FindjobnuService.Services;
-using System;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 

@@ -135,6 +135,12 @@ namespace FindjobnuService
                 opts.Level = CompressionLevel.Fastest; // secondary fallback
             });
 
+            // Response caching
+            builder.Services.AddResponseCaching();
+
+            // Server-side memory cache for services
+            builder.Services.AddMemoryCache();
+
             // Register Swagger services for minimal APIs/endpoints
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
@@ -178,6 +184,9 @@ namespace FindjobnuService
 
             // Enable response compression middleware
             app.UseResponseCompression();
+
+            // Enable response caching middleware
+            app.UseResponseCaching();
 
             app.UseAuthentication();
             app.UseAuthorization();

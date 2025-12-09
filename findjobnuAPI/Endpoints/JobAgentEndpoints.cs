@@ -1,9 +1,9 @@
+using FindjobnuService.DTOs.Requests;
 using FindjobnuService.Models;
 using FindjobnuService.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using FindjobnuService.DTOs.Requests;
 
 namespace FindjobnuService.Endpoints
 {

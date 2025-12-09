@@ -1,13 +1,6 @@
 using System.Net;
-using System.Net.Http.Headers;
-using System.Text.Json;
 using System.Text;
-using Xunit;
-using FindjobnuTesting.Integration;
-using Microsoft.Extensions.DependencyInjection;
-using FindjobnuService.Repositories.Context;
-using FindjobnuService.Models;
-using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace FindjobnuTesting.Integration.Profile
 {

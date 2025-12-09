@@ -1,5 +1,4 @@
 ﻿using FindjobnuService.Models;
-using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace FindjobnuService.Services
 {

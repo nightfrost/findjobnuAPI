@@ -1,16 +1,10 @@
-using System.IO;
-using System.IO.Compression;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
+using FindjobnuService.DTOs;
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
 using iText.Kernel.Pdf.Canvas.Parser.Listener;
-using FindjobnuService.DTOs;
+using System.IO.Compression;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace FindjobnuService.Services;
 

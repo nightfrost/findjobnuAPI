@@ -1,11 +1,9 @@
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
 using FindjobnuService.Repositories.Context;
-using System.Linq;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Serilog;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FindjobnuTesting.Integration
 {

@@ -1,6 +1,5 @@
 using FindjobnuService.Models;
 using FindjobnuService.Repositories.Context;
-using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Text.Json;
 

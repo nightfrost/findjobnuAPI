@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Xunit;
-
-using Moq;
+﻿using FindjobnuService.Models;
 using FindjobnuService.Repositories.Context;
-using FindjobnuService.Models;
 using FindjobnuService.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Moq;
 
 namespace FindjobnuTesting
 {

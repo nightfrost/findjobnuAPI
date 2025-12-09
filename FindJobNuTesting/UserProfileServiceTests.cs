@@ -1,11 +1,8 @@
-using Xunit;
 using FindjobnuService.Models;
-using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using Moq;
 using FindjobnuService.Repositories.Context;
 using FindjobnuService.Services;
+using Microsoft.EntityFrameworkCore;
+using Moq;
 
 namespace FindjobnuTesting
 {
@@ -25,7 +22,8 @@ namespace FindjobnuTesting
         public async Task GetByIdAsync_ReturnsProfile_WhenExists()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var profile = new Profile {
+            var profile = new Profile
+            {
                 UserId = "user1",
                 Keywords = new List<string> { "developer", "csharp" },
                 BasicInfo = new BasicInfo { FirstName = "John", LastName = "Doe" }
@@ -44,7 +42,8 @@ namespace FindjobnuTesting
         public async Task CreateAsync_AddsProfile()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var profile = new Profile {
+            var profile = new Profile
+            {
                 UserId = "user2",
                 Keywords = new List<string> { "qa" },
                 BasicInfo = new BasicInfo { FirstName = "Jane", LastName = "Smith" }
@@ -61,7 +60,8 @@ namespace FindjobnuTesting
         public async Task UpdateAsync_UpdatesProfile_WhenUserIdMatches()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var profile = new Profile {
+            var profile = new Profile
+            {
                 Id = 2,
                 UserId = "user3",
                 Keywords = new List<string> { "old" },
@@ -70,7 +70,8 @@ namespace FindjobnuTesting
             context.Profiles.Add(profile);
             await context.SaveChangesAsync();
 
-            var updatedProfile = new Profile {
+            var updatedProfile = new Profile
+            {
                 UserId = "user3",
                 Keywords = new List<string> { "new" },
                 BasicInfo = new BasicInfo { FirstName = "Alicia", LastName = "Brown" }
@@ -87,7 +88,8 @@ namespace FindjobnuTesting
         public async Task GetSavedJobsByUserIdAsync_ReturnsSavedJobs()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var profile = new Profile {
+            var profile = new Profile
+            {
                 Id = 3,
                 UserId = "user4",
                 SavedJobPosts = new List<string> { "1", "2" },
@@ -129,7 +131,8 @@ namespace FindjobnuTesting
         public async Task SaveJobAsync_AddsJobToSavedList()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var profile = new Profile {
+            var profile = new Profile
+            {
                 Id = 4,
                 UserId = "user5",
                 SavedJobPosts = new List<string>(),
@@ -149,7 +152,8 @@ namespace FindjobnuTesting
         public async Task SaveJobAsync_DoesNotAddDuplicateJob()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var profile = new Profile {
+            var profile = new Profile
+            {
                 Id = 5,
                 UserId = "user6",
                 SavedJobPosts = new List<string> { "100" },
@@ -175,7 +179,8 @@ namespace FindjobnuTesting
         public async Task RemoveSavedJobAsync_RemovesJobFromSavedList()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var profile = new Profile {
+            var profile = new Profile
+            {
                 Id = 6,
                 UserId = "user7",
                 SavedJobPosts = new List<string> { "200" },
@@ -195,7 +200,8 @@ namespace FindjobnuTesting
         public async Task RemoveSavedJobAsync_ReturnsFalse_WhenJobNotInList()
         {
             var service = GetServiceWithInMemoryDb(out var context);
-            var profile = new Profile {
+            var profile = new Profile
+            {
                 Id = 8,
                 UserId = "user8",
                 SavedJobPosts = new List<string> { "300" },

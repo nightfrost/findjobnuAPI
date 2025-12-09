@@ -1,6 +1,5 @@
 using FindjobnuService.Mappers;
 using FindjobnuService.Models;
-using Xunit;
 
 namespace FindjobnuTesting;
 
