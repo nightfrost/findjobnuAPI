@@ -18,17 +18,21 @@ A minimal ASP.NET Core Web API for managing and searching job postings and user 
 - User profile management and saved jobs
 - LinkedIn profile import via Python script (see LinkedIn endpoints below)
 - Pagination and filtering support
+- Automatic WebP conversion for stored banner/footer images (original MIME information also returned for fallback)
+- Response compression (Brotli/Gzip) and short-lived response caching plus in-memory caching for search and recommendations
 - Entity Framework Core with SQL Server
 - OpenAPI/Swagger documentation
 - CORS enabled for all origins
 - JWT authentication (integrates with AuthService)
-- .NET 8, C# 12
+- .NET 10, C# 14
 
 ## Endpoints
 
 - `GET /api/jobindexposts` – List job postings (supports pagination)
-- `GET /api/jobindexposts/search` – Search job postings by title, location, category, and date
+- `GET /api/jobindexposts/search` – Search job postings by title, location, category, and date (cached per query parameters)
 - `GET /api/jobindexposts/{id}` – Get a job posting by ID
+- `GET /api/jobindexposts/saved` – Get saved job posts for the authenticated user
+- `GET /api/jobindexposts/recommended-jobs` – Get personalized recommendations (cached per user + paging)
 - `GET /api/userprofile/{userid}` – Get user profile by user ID
 - `PUT /api/userprofile/{id}` – Update user profile (JWT required)
 - `POST /api/userprofile/` – Create user profile
@@ -38,6 +42,14 @@ A minimal ASP.NET Core Web API for managing and searching job postings and user 
 - `GET /api/cities` – List all cities
 - **LinkedIn Profile Import:**
   - `POST /api/linkedin/import` – Import LinkedIn profile data for a user (requires LinkedIn credentials and user ID)
+
+### Image payloads
+
+Job posting responses now include:
+- `BannerPicture` / `FooterPicture`: raw bytes (WebP when conversion succeeds)
+- `BannerFormat` / `FooterFormat`: `webp` or `original`
+- `BannerMimeType` / `FooterMimeType`: MIME to apply on the client
+Frontends should prefer the WebP bytes when supported and fall back to `original` when necessary.
 
 ## Project Structure
 
@@ -62,7 +74,7 @@ Handles authentication and authorization for the solution.
 - Token refresh and revocation endpoints
 - Account settings: change password, change email (2-step), disable account
 - ASP.NET Core Identity with Entity Framework Core
-- .NET 8, C# 12
+- .NET 10, C# 14
 
 ## Endpoints
 
@@ -128,7 +140,7 @@ dotnet test FindJobNuTesting
 
 ## Prerequisites
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - SQL Server instance (for production)
 
 ## Configuration
@@ -169,6 +181,7 @@ Swagger UI is available at `/swagger` for both findjobnuAPI and AuthService when
 - Microsoft.AspNetCore.Identity.EntityFrameworkCore
 - Serilog (logging)
 - Moq, xUnit, coverlet.collector (testing)
+- SkiaSharp (WebP conversion)
 
 ---
 

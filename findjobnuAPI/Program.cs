@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.IdentityModel.Protocols.Configuration;
 using Serilog;
+using Serilog.Events;
 using FindjobnuService.Services;
 using FindjobnuService.Repositories.Context;
 using FindjobnuService.Endpoints;
@@ -42,7 +43,8 @@ namespace FindjobnuService
                         {
                             TableName = "Logs",
                             AutoCreateSqlTable = true
-                        });
+                        },
+                        restrictedToMinimumLevel: LogEventLevel.Warning);
                 }
             }
 
