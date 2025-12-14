@@ -26,7 +26,7 @@ namespace FindjobnuTesting.Integration
                 db.Cities.AddRange(
                     new SharedInfrastructure.Cities.City { Name = "New York" },
                     new SharedInfrastructure.Cities.City { Name = "Los Angeles" },
-                    new SharedInfrastructure.Cities.City { Name = "København" }
+                    new SharedInfrastructure.Cities.City { Name = "K\u00F8benhavn" }
                 );
                 db.SaveChanges();
             }
@@ -45,11 +45,12 @@ namespace FindjobnuTesting.Integration
         [Fact]
         public async Task SearchCities_ReturnsMatches()
         {
-            var response = await _client.GetAsync("/api/Cities/search?query=Køben");
+            //Unicode character or githubactions will fail due to danish letters.
+            var response = await _client.GetAsync("/api/Cities/search?query=K\u00F8ben");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             var cities = await response.Content.ReadFromJsonAsync<List<FindjobnuService.DTOs.Responses.CityResponse>>();
             Assert.NotNull(cities);
-            Assert.Contains(cities!, c => c.Name.Contains("København", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(cities!, c => c.Name.Contains("K\u00F8benhavn", StringComparison.OrdinalIgnoreCase));
         }
     }
 }
