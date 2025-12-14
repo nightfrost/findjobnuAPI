@@ -1,4 +1,4 @@
-﻿namespace FindjobnuService.Models
+﻿namespace FindjobnuService.DTOs.Responses
 {
     public struct CategoriesResponse(bool success, string? errorMessage, Dictionary<string, int> categoryAndAmountOfJobs)
     {

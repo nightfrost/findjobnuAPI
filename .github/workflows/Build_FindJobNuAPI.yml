@@ -69,8 +69,9 @@ jobs:
           host: ${{ vars.SERVER_NAME }} 
           username: ${{ vars.SERVER_USER }} 
           key: ${{ secrets.SERVER_ROOT_CERTIFICATE }} 
+          passphrase: ${{ secrets.SERVER_ROOT_CERTIFICATE_PASSWORD }}
           source: "./findjobnuAPI-downloaded-artifact/*" 
-          target: "/var/www/findjobnu/publish" 
+          target: "/var/www/findjobnu/api/publish" 
           strip_components: 1
     
       - name: Deploy AuthService application files via SCP
@@ -79,6 +80,7 @@ jobs:
           host: ${{ vars.SERVER_NAME }} 
           username: ${{ vars.SERVER_USER }} 
           key: ${{ secrets.SERVER_ROOT_CERTIFICATE }} 
+          passphrase: ${{ secrets.SERVER_ROOT_CERTIFICATE_PASSWORD }}
           source: "./AuthService-downloaded-artifact/*" 
           target: "/var/www/findjobnu/auth/publish" 
           strip_components: 1
@@ -89,13 +91,14 @@ jobs:
           host: ${{ vars.SERVER_NAME }}
           username: ${{ vars.SERVER_USER }}
           key: ${{ secrets.SERVER_ROOT_CERTIFICATE }}
+          passphrase: ${{ secrets.SERVER_ROOT_CERTIFICATE_PASSWORD }}
           script: |
             echo "Deployment completed on $(date)"
             echo "Restarting findjobNu API service."
             sudo systemctl restart findjobnuapi.service
             echo "Restarting auth service service."
-            sudo systemctl restart authapi.service
+            sudo systemctl restart findjobnuauth.service
             echo "Listing API Status."
             sudo systemctl status findjobnuapi.service
             echo "Listing auth Status."
-            sudo systemctl status authapi.service
+            sudo systemctl status findjobnuauth.service

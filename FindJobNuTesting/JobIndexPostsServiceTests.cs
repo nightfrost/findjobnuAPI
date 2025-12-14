@@ -37,7 +37,7 @@ namespace FindjobnuTesting
             var itCategory = new Category { Name = "IT" };
             context.Categories.Add(itCategory);
             var job1 = new JobIndexPosts { JobID = 10, JobTitle = "QA Engineer", JobDescription = "", JobLocation = "Copenhagen", Categories = new List<Category> { itCategory }, Published = DateTime.UtcNow.AddDays(-1) };
-            var job2 = new JobIndexPosts { JobID = 20, JobTitle = "Systems Admin", JobDescription = "", JobLocation = "Aarhus", Categories = new List<Category> { itCategory }, Published = DateTime.UtcNow.AddDays(-2), Keywords = new List<string> { "PowerShell", "Windows" } };
+            var job2 = new JobIndexPosts { JobID = 20, JobTitle = "Systems Admin", JobDescription = "", JobLocation = "Aarhus", Categories = new List<Category> { itCategory }, Published = DateTime.UtcNow.AddDays(-2) };
             context.JobIndexPosts.AddRange(job1, job2);
             context.JobKeywords.AddRange(
                 new JobKeyword { JobID = 10, Keyword = "automation" },

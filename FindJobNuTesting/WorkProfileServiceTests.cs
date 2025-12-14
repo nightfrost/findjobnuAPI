@@ -14,16 +14,7 @@ namespace FindjobnuTesting
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
             context = new FindjobnuContext(options);
-            var jobServiceMock = new Mock<IJobIndexPostsService>();
-            return new ProfileService(context, jobServiceMock.Object);
-        }
-
-        private Profile CreateProfile(FindjobnuContext context, string userId = "user1")
-        {
-            var profile = new Profile { Id = 1, UserId = userId, BasicInfo = new BasicInfo { FirstName = "Test", LastName = "User" } };
-            context.Profiles.Add(profile);
-            context.SaveChanges();
-            return profile;
+            return new ProfileService(context);
         }
 
         [Fact]

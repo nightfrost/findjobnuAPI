@@ -1,4 +1,5 @@
-﻿using FindjobnuService.Models;
+﻿using FindjobnuService.DTOs.Responses;
+using FindjobnuService.Models;
 using FindjobnuService.Repositories.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -167,7 +168,6 @@ JOIN dbo.JobIndexPostingsExtended j ON j.JobID = k.JobID";
                         (j.JobLocation != null && j.JobLocation.ToLower().Contains(term)) ||
                         (j.JobDescription != null && j.JobDescription.ToLower().Contains(term)) ||
                         (j.Categories.Any(c => c.Name != null && c.Name.ToLower().Contains(term))) ||
-                        (j.Keywords != null && j.Keywords.Any(k => !string.IsNullOrWhiteSpace(k) && k.ToLower().Contains(term))) ||
                         _db.JobKeywords.Any(k => k.JobID == j.JobID && k.Keyword != null && k.Keyword.ToLower().Contains(term))
                     );
                 }
@@ -251,7 +251,7 @@ JOIN dbo.JobIndexPostingsExtended j ON j.JobID = k.JobID";
             if (pageSize < 1) pageSize = 20;
 
             var cacheKey = $"rec:{userId}:{page}:{pageSize}";
-            if (_cache.TryGetValue<PagedList<JobIndexPosts>>(cacheKey, out var cached))
+            if (_cache.TryGetValue<PagedList<JobIndexPosts>>(cacheKey, out var cached) && cached != null)
             {
                 return cached;
             }
@@ -340,7 +340,6 @@ JOIN dbo.JobIndexPostingsExtended j ON j.JobID = k.JobID";
                     (j.JobDescription != null && kw.Any(k => j.JobDescription!.ToLower().Contains(k))) ||
                     (j.JobLocation != null && kw.Any(k => j.JobLocation!.ToLower().Contains(k))) ||
                     (j.Categories.Any(c => c.Name != null && kw.Any(k => c.Name.ToLower().Contains(k)))) ||
-                    (j.Keywords != null && j.Keywords.Any(x => !string.IsNullOrWhiteSpace(x) && kw.Any(k => x.ToLower().Contains(k)))) ||
                     _db.JobKeywords.Any(kj => kj.JobID == j.JobID && kj.Keyword != null && kw.Any(k => kj.Keyword.ToLower().Contains(k)))
                 );
 

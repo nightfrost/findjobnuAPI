@@ -11,6 +11,7 @@ using FindjobnuService.Repositories.Context;
 using FindjobnuService.Endpoints;
 using Microsoft.AspNetCore.ResponseCompression;
 using System.IO.Compression;
+using SharedInfrastructure.Cities;
 
 namespace FindjobnuService
 {
@@ -161,6 +162,8 @@ namespace FindjobnuService
             });
 
             var app = builder.Build();
+
+            app.Services.SeedCitiesAsync<FindjobnuContext>().GetAwaiter().GetResult();
 
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {

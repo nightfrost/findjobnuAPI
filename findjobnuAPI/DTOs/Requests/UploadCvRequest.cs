@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace FindjobnuService.DTOs
+namespace FindjobnuService.DTOs.Requests
 {
     /// <summary>
     /// Request model for CV file upload operations.

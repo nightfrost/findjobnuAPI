@@ -1,6 +1,7 @@
 using AuthService.Data;
 using AuthService.Endpoints;
 using AuthService.Entities;
+using AuthService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -8,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.Text;
+using SharedInfrastructure.Cities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,7 +43,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddDefaultTokenProviders();
 
 // Register application services
-builder.Services.AddScoped<AuthService.Models.IAuthService, AuthService.Services.AuthService>();
+builder.Services.AddScoped<IAuthService, AuthService.Services.AuthService>();
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"];
@@ -137,6 +139,8 @@ builder.Services.AddAuthorization();
 builder.Services.AddHttpClient();
 
 var app = builder.Build();
+
+await app.Services.SeedCitiesAsync<ApplicationDbContext>();
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {

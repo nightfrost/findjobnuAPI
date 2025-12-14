@@ -47,7 +47,7 @@ namespace FindjobnuService.Mappers
                 }).ToList(),
                 Interests = request.Interests?.Select(i => new Interest
                 {
-                    Title = i.Title
+                    Title = i.Title ?? string.Empty
                 }).ToList(),
                 Accomplishments = request.Accomplishments?.Select(a => new Accomplishment
                 {

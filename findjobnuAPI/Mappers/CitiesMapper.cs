@@ -1,9 +1,9 @@
 using FindjobnuService.DTOs.Responses;
-using FindjobnuService.Models;
+using SharedInfrastructure.Cities;
 
 namespace FindjobnuService.Mappers;
 
 public static class CitiesMapper
 {
-    public static CityResponse ToDto(Cities model) => new(model.Id, model.CityName);
+    public static CityResponse ToDto(City model) => new(model.Id, model.ExternalId, model.Name, model.Slug);
 }

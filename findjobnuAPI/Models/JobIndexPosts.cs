@@ -18,6 +18,5 @@ namespace FindjobnuService.Models
         public ICollection<Category> Categories { get; set; } = new List<Category>();
         public byte[]? BannerPicture { get; set; } = [];
         public byte[]? FooterPicture { get; set; } = [];
-        public List<string>? Keywords { get; set; } = [];
     }
 }

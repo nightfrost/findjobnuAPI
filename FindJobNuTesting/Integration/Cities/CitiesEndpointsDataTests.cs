@@ -24,9 +24,9 @@ namespace FindjobnuTesting.Integration
             if (!db.Cities.Any())
             {
                 db.Cities.AddRange(
-                    new FindjobnuService.Models.Cities { CityName = "New York" },
-                    new FindjobnuService.Models.Cities { CityName = "Los Angeles" },
-                    new FindjobnuService.Models.Cities { CityName = "Copenhagen" }
+                    new SharedInfrastructure.Cities.City { Name = "New York" },
+                    new SharedInfrastructure.Cities.City { Name = "Los Angeles" },
+                    new SharedInfrastructure.Cities.City { Name = "Copenhagen" }
                 );
                 db.SaveChanges();
             }
@@ -45,11 +45,11 @@ namespace FindjobnuTesting.Integration
         [Fact]
         public async Task SearchCities_ReturnsMatches()
         {
-            var response = await _client.GetAsync("/api/Cities/search?query=Cope");
+            var response = await _client.GetAsync("/api/Cities/search?query=Køben");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             var cities = await response.Content.ReadFromJsonAsync<List<FindjobnuService.DTOs.Responses.CityResponse>>();
             Assert.NotNull(cities);
-            Assert.Contains(cities!, c => c.CityName.Contains("Copenhagen"));
+            Assert.Contains(cities!, c => c.Name.Contains("København", StringComparison.OrdinalIgnoreCase));
         }
     }
 }

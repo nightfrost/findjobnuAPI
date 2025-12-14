@@ -12,7 +12,6 @@ public record JobIndexPostResponse(
     string? CompanyUrl,
     byte[]? BannerPicture,
     byte[]? FooterPicture,
-    List<string>? Keywords,
     string? BannerFormat,
     string? FooterFormat,
     string? BannerMimeType,

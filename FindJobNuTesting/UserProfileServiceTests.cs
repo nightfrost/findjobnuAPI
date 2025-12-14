@@ -14,8 +14,7 @@ namespace FindjobnuTesting
                 .UseInMemoryDatabase(databaseName: "TestDb")
                 .Options;
             context = new FindjobnuContext(options);
-            var jobServiceMock = new Mock<IJobIndexPostsService>();
-            return new ProfileService(context, jobServiceMock.Object);
+            return new ProfileService(context);
         }
 
         [Fact]

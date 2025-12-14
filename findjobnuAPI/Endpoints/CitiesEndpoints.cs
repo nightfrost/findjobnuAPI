@@ -1,6 +1,6 @@
 ﻿using FindjobnuService.DTOs.Responses;
 using FindjobnuService.Mappers;
-using FindjobnuService.Models;
+using SharedInfrastructure.Cities;
 using FindjobnuService.Repositories.Context;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -10,11 +10,13 @@ public static class CitiesEndpoints
 {
     public static void MapCitiesEndpoints(this IEndpointRouteBuilder routes)
     {
-        var group = routes.MapGroup("/api/Cities").WithTags(nameof(Cities));
+        var group = routes.MapGroup("/api/Cities").WithTags(nameof(City));
 
         group.MapGet("/", async (FindjobnuContext db) =>
         {
-            var cities = await db.Cities.ToListAsync();
+            var cities = await db.Cities
+                .OrderBy(c => c.Name)
+                .ToListAsync();
             return cities.Select(CitiesMapper.ToDto).ToList();
         })
         .WithName("GetAllCities");
@@ -24,13 +26,12 @@ public static class CitiesEndpoints
             try
             {
                 var model = await db.Cities.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id);
-                return model is Cities c
+                return model is City c
                     ? TypedResults.Ok(CitiesMapper.ToDto(c))
                     : TypedResults.NoContent();
             }
             catch
             {
-                // In case of transient or provider issues, return NoContent for missing entries per test expectation
                 return TypedResults.NoContent();
             }
         })
@@ -43,7 +44,8 @@ public static class CitiesEndpoints
 
             var normalizedQuery = $"%{query.Trim()}%";
             var results = await db.Cities.AsNoTracking()
-                .Where(model => EF.Functions.Like(model.CityName, normalizedQuery))
+                .Where(model => EF.Functions.Like(model.Name, normalizedQuery))
+                .OrderBy(model => model.Name)
                 .ToListAsync();
 
             var dtos = results.Select(CitiesMapper.ToDto).ToList();

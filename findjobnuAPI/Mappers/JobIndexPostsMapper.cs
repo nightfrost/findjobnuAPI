@@ -23,7 +23,6 @@ public static class JobIndexPostsMapper
             model.CompanyURL,
             banner.bytes,
             footer.bytes,
-            model.Keywords,
             banner.format,
             footer.format,
             banner.mimeType,

@@ -1,0 +1,9 @@
+namespace SharedInfrastructure.Cities;
+
+public class City
+{
+    public int Id { get; set; }
+    public Guid ExternalId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+}

@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using AuthService.Models;
+using Microsoft.AspNetCore.Identity;
 
-namespace AuthService.Models
+namespace AuthService.Services
 {
     public interface IAuthService
     {

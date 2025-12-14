@@ -1,4 +1,5 @@
-﻿using FindjobnuService.Models;
+﻿using FindjobnuService.DTOs.Responses;
+using FindjobnuService.Models;
 
 namespace FindjobnuService.Services
 {
@@ -8,7 +9,7 @@ namespace FindjobnuService.Services
         Task<PagedList<JobIndexPosts>> SearchAsync(string? searchTerm, string? location, string? category, DateTime? postedAfter, DateTime? postedBefore, int page, int pageSize);
         Task<JobIndexPosts> GetByIdAsync(int id);
         Task<CategoriesResponse> GetCategoriesAsync();
-        Task<PagedList<JobIndexPosts>> GetSavedJobsByUserId(string userid, int page);
+        Task<PagedList<JobIndexPosts>> GetSavedJobsByUserId(string userId, int page);
         Task<PagedList<JobIndexPosts>> GetRecommendedJobsByUserAndProfile(string userId, int page, int pageSize);
     }
 }

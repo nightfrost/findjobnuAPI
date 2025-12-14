@@ -4,6 +4,7 @@ using FindjobnuService.Repositories.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FindjobnuService.Migrations
 {
     [DbContext(typeof(FindjobnuContext))]
-    partial class FindjobnuContextModelSnapshot : ModelSnapshot
+    [Migration("20251214131744_Latest")]
+    partial class Latest
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -62,6 +65,23 @@ namespace FindjobnuService.Migrations
                     b.HasKey("CategoryID");
 
                     b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("FindjobnuService.Models.Cities", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CityName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Cities", (string)null);
                 });
 
             modelBuilder.Entity("FindjobnuService.Models.Contact", b =>
@@ -265,6 +285,9 @@ namespace FindjobnuService.Migrations
                     b.Property<string>("JobUrl")
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("Keywords")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime?>("Published")
                         .HasColumnType("datetime2");
 
@@ -378,40 +401,6 @@ namespace FindjobnuService.Migrations
                     b.HasIndex("CategoryID");
 
                     b.ToTable("JobCategories", (string)null);
-                });
-
-            modelBuilder.Entity("SharedInfrastructure.Cities.City", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<Guid>("ExternalId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ExternalId")
-                        .IsUnique();
-
-                    b.HasIndex("Name");
-
-                    b.HasIndex("Slug")
-                        .IsUnique();
-
-                    b.ToTable("Cities", (string)null);
                 });
 
             modelBuilder.Entity("FindjobnuService.Models.Accomplishment", b =>

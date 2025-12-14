@@ -5,10 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FindjobnuService.Services
 {
-    public class ProfileService(FindjobnuContext db, IJobIndexPostsService jobService) : IProfileService
+    public class ProfileService(FindjobnuContext db) : IProfileService
     {
         private readonly FindjobnuContext _db = db;
-        private readonly IJobIndexPostsService _jobService = jobService;
 
         public async Task<ProfileDto?> GetByUserIdAsync(string userId)
         {
@@ -333,7 +332,7 @@ namespace FindjobnuService.Services
         {
             return GetProfileCollectionDataByUserIdAsync(
                 userId,
-                p => p.Experiences,
+                p => p.Experiences ?? Enumerable.Empty<Experience>(),
                 p => p.Experiences,
                 e => new ExperienceDto
                 {
@@ -353,7 +352,7 @@ namespace FindjobnuService.Services
         {
             return GetProfileCollectionDataByUserIdAsync(
                 userId,
-                p => p.Skills,
+                p => p.Skills ?? Enumerable.Empty<Skill>(),
                 p => p.Skills,
                 s => new SkillDto
                 {
@@ -367,7 +366,7 @@ namespace FindjobnuService.Services
         {
             return GetProfileCollectionDataByUserIdAsync(
                 userId,
-                p => p.Educations,
+                p => p.Educations ?? Enumerable.Empty<Education>(),
                 p => p.Educations,
                 e => new EducationDto
                 {

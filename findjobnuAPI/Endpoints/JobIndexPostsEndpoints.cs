@@ -1,11 +1,11 @@
-﻿using FindjobnuService.DTOs.Responses;
+﻿using FindjobnuService.DTOs.Requests;
+using FindjobnuService.DTOs.Responses;
 using FindjobnuService.Mappers;
 using FindjobnuService.Models;
 using FindjobnuService.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using DTORequest = FindjobnuService.DTOs.Requests.JobIndexPostsSearchRequest;
 
 namespace FindjobnuService.Endpoints;
 
@@ -25,7 +25,6 @@ public static class JobIndexPostsEndpoints
                 var pagedList = await service.GetAllAsync(page, pageSize);
                 var dto = JobIndexPostsMapper.ToPagedDto(pagedList);
 
-                // Cache public list for short time
                 if (dto.Items.Any())
                 {
                     routes.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("CacheHeaders");
@@ -38,10 +37,10 @@ public static class JobIndexPostsEndpoints
             }
         })
         .WithName("GetAllJobPosts")
-        .CacheOutput(p => p.Expire(TimeSpan.FromMinutes(2))); // if using output caching
+        .CacheOutput(p => p.Expire(TimeSpan.FromMinutes(2)));
 
         group.MapGet("/search", async Task<Results<Ok<PagedResponse<JobIndexPostResponse>>, NoContent>> (
-            [AsParameters] DTORequest request,
+            [AsParameters] JobIndexPostsSearchRequest request,
             [FromServices] IJobIndexPostsService service) =>
         {
             try
