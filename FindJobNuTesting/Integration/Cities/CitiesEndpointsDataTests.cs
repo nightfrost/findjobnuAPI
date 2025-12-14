@@ -26,7 +26,7 @@ namespace FindjobnuTesting.Integration
                 db.Cities.AddRange(
                     new SharedInfrastructure.Cities.City { Name = "New York" },
                     new SharedInfrastructure.Cities.City { Name = "Los Angeles" },
-                    new SharedInfrastructure.Cities.City { Name = "Copenhagen" }
+                    new SharedInfrastructure.Cities.City { Name = "København" }
                 );
                 db.SaveChanges();
             }
