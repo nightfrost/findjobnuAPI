@@ -48,7 +48,7 @@ namespace FindjobnuService.Services
             if (pageSize < 1) pageSize = 20;
 
             var cacheKey = $"search:{searchTerm}|{location}|{category}|{postedAfter:O}|{postedBefore:O}|{page}|{pageSize}";
-            if (_cache.TryGetValue<PagedList<JobIndexPosts>>(cacheKey, out var cached))
+            if (_cache.TryGetValue<PagedList<JobIndexPosts>>(cacheKey, out var cached) && cached is not null)
             {
                 return cached;
             }

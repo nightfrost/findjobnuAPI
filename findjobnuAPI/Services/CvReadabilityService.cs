@@ -81,15 +81,17 @@ public class CvReadabilityService : ICvReadabilityService
             // Header check
             stream.Position = 0;
             Span<byte> header = stackalloc byte[5];
-            int read = stream.Read(header);
-            if (read < 5 || header[0] != (byte)'%' || header[1] != (byte)'P' || header[2] != (byte)'D' || header[3] != (byte)'F' || header[4] != (byte)'-')
+            if (!TryFillBuffer(stream, header))
+                return false;
+            if (header[0] != (byte)'%' || header[1] != (byte)'P' || header[2] != (byte)'D' || header[3] != (byte)'F' || header[4] != (byte)'-')
                 return false;
 
             // EOF check (look in last 1KB)
             var tailSize = (int)Math.Min(1024, stream.Length);
             stream.Position = stream.Length - tailSize;
             var tailBuf = new byte[tailSize];
-            stream.Read(tailBuf, 0, tailSize);
+            if (!TryFillBuffer(stream, tailBuf))
+                return false;
             var tailStr = Encoding.ASCII.GetString(tailBuf);
             if (!tailStr.Contains("%%EOF", StringComparison.Ordinal))
                 return false;
@@ -98,7 +100,8 @@ public class CvReadabilityService : ICvReadabilityService
             stream.Position = 0;
             var headSize = (int)Math.Min(4096, stream.Length);
             var headBuf = new byte[headSize];
-            stream.Read(headBuf, 0, headSize);
+            if (!TryFillBuffer(stream, headBuf))
+                return false;
             var headStr = Encoding.ASCII.GetString(headBuf);
             if (headStr.Contains("/Encrypt", StringComparison.Ordinal))
                 throw new ArgumentException("Encrypted/password-protected PDFs are not supported.");
@@ -395,6 +398,22 @@ public class CvReadabilityService : ICvReadabilityService
             }
         }
         return sb.ToString();
+    }
+
+    private static bool TryFillBuffer(Stream stream, Span<byte> buffer)
+    {
+        var totalRead = 0;
+        while (totalRead < buffer.Length)
+        {
+            var read = stream.Read(buffer.Slice(totalRead));
+            if (read == 0)
+            {
+                return false;
+            }
+            totalRead += read;
+        }
+
+        return true;
     }
 
     private static string NormalizeWhitespace(string input)

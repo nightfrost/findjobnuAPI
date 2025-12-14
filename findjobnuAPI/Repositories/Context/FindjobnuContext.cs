@@ -65,7 +65,7 @@ namespace FindjobnuService.Repositories.Context
                 .HasIndex(p => p.UserId)
                 .IsUnique();
 
-            var keywordsConverter = new ValueConverter<List<string>?, string>(
+            var keywordsConverter = new ValueConverter<List<string>?, string?>(
                 v => v == null ? null : string.Join(",", v),
                 v => string.IsNullOrWhiteSpace(v) ? new List<string>() : v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList()
             );

@@ -17,7 +17,7 @@ namespace FindjobnuTesting.Integration
             builder.ConfigureAppConfiguration((context, cfg) =>
             {
                 cfg.AddEnvironmentVariables();
-                var overrides = new Dictionary<string, string>
+                var overrides = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
                 {
                     {"Serilog:Using:0", "Serilog.Sinks.Console"},
                     {"Serilog:WriteTo:0:Name", "Console"},
