@@ -11,6 +11,9 @@ namespace FindjobnuService.Services;
 public class CvReadabilityService : ICvReadabilityService
 {
     private const long MaxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
+    private const int MaxExtractedCharacters = 2_500_000;
+    private const int MaxResultCharacters = 2_000_000;
+    private const int MaxArraySegmentCharacters = 200_000;
     private readonly ILogger<CvReadabilityService> _logger;
 
     public CvReadabilityService(ILogger<CvReadabilityService> logger)
@@ -130,7 +133,7 @@ public class CvReadabilityService : ICvReadabilityService
                 {
                     sb.AppendLine(text);
                 }
-                if (sb.Length > 2_500_000) break; // safety cap
+                if (sb.Length > MaxExtractedCharacters) break; // safety cap
             }
 
             var result = sb.ToString();
@@ -153,37 +156,23 @@ public class CvReadabilityService : ICvReadabilityService
     {
         try
         {
-            if (pdfStream is MemoryStream ms)
+            var memoryStream = EnsureMemoryStream(pdfStream, out var ownsStream);
+            try
             {
-                var data = ms.ToArray();
-                var content = new StringBuilder();
-
-                foreach (var streamContent in EnumeratePdfStreams(data))
+                var combinedContent = ExtractDecodedStreams(memoryStream);
+                if (string.IsNullOrEmpty(combinedContent))
                 {
-                    // Try to decompress if Flate/zlib; if not, use as-is
-                    string decoded = TryDecodeStream(streamContent.Raw, streamContent.IsFlate) ?? string.Empty;
-                    if (decoded.Length == 0) continue;
-                    content.AppendLine(decoded);
-                    if (content.Length > 2_500_000) break; // safety cap
+                    combinedContent = ReadRawPdfContent(memoryStream);
                 }
 
-                var combined = content.ToString();
-                if (string.IsNullOrEmpty(combined))
-                {
-                    // Fallback: raw ASCII scan (very naive)
-                    pdfStream.Position = 0;
-                    using var fallbackReader = new StreamReader(pdfStream, Encoding.Latin1, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
-                    combined = fallbackReader.ReadToEnd();
-                }
-
-                return ExtractTextFromContentStreams(combined);
+                return ExtractTextFromContentStreams(combinedContent);
             }
-            else
+            finally
             {
-                using var tmp = new MemoryStream();
-                pdfStream.CopyTo(tmp);
-                tmp.Position = 0;
-                return ExtractTextFromPdf(tmp);
+                if (ownsStream)
+                {
+                    memoryStream.Dispose();
+                }
             }
         }
         catch
@@ -192,63 +181,144 @@ public class CvReadabilityService : ICvReadabilityService
         }
     }
 
+    private static MemoryStream EnsureMemoryStream(Stream source, out bool ownsStream)
+    {
+        if (source is MemoryStream memoryStream)
+        {
+            ownsStream = false;
+            memoryStream.Position = 0;
+            return memoryStream;
+        }
+
+        var copy = new MemoryStream();
+        source.CopyTo(copy);
+        copy.Position = 0;
+        ownsStream = true;
+        return copy;
+    }
+
+    private static string ExtractDecodedStreams(MemoryStream pdfStream)
+    {
+        var data = pdfStream.ToArray();
+        var content = new StringBuilder();
+
+        foreach (var streamContent in EnumeratePdfStreams(data))
+        {
+            var decoded = TryDecodeStream(streamContent.Raw, streamContent.IsFlate) ?? string.Empty;
+            if (decoded.Length == 0) continue;
+
+            content.AppendLine(decoded);
+            if (content.Length > MaxExtractedCharacters) break;
+        }
+
+        return content.ToString();
+    }
+
+    private static string ReadRawPdfContent(Stream pdfStream)
+    {
+        pdfStream.Position = 0;
+        using var fallbackReader = new StreamReader(pdfStream, Encoding.Latin1, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
+        return fallbackReader.ReadToEnd();
+    }
+
     private static string ExtractTextFromContentStreams(string combined)
     {
+        if (string.IsNullOrWhiteSpace(combined))
+        {
+            return string.Empty;
+        }
+
         var results = new List<string>();
+        int currentLength = 0;
 
-        // ( ... ) Tj
-        var tjMatches = Regex.Matches(combined, "\\((?<s>(?:\\\\.|[^\\\\\\)])*)\\)\\s*T[jJ]");
-        foreach (Match m in tjMatches)
+        ProcessTjOperators(combined, results, ref currentLength);
+
+        if (!HasExceededResultLimit(currentLength))
         {
-            var s = UnescapePdfString(m.Groups["s"].Value);
-            if (!string.IsNullOrWhiteSpace(s)) results.Add(s);
-            if (TotalLength(results) > 2_000_000) break;
+            ProcessTjArrayOperators(combined, results, ref currentLength);
         }
 
-        if (TotalLength(results) <= 2_000_000)
+        if (!HasExceededResultLimit(currentLength))
         {
-            // [ (..).. ] TJ
-            var tjArrayMatches = Regex.Matches(combined, "\\[(?<arr>[^\\]]*)\\]\\s*TJ");
-            foreach (Match m in tjArrayMatches)
-            {
-                var arr = m.Groups["arr"].Value;
-                var parts = Regex.Matches(arr, "\\((?<s>(?:\\\\.|[^\\\\\\)])*)\\)");
-                var sb = new StringBuilder();
-                foreach (Match p in parts)
-                {
-                    sb.Append(UnescapePdfString(p.Groups["s"].Value));
-                    if (sb.Length > 200_000) break;
-                }
-                var s = sb.ToString();
-                if (!string.IsNullOrWhiteSpace(s)) results.Add(s);
-                if (TotalLength(results) > 2_000_000) break;
-            }
-        }
-
-        if (TotalLength(results) <= 2_000_000)
-        {
-            // ( ... ) ' and ( ... ) " operators
-            var singleQuoteMatches = Regex.Matches(combined, "\\((?<s>(?:\\\\.|[^\\\\\\)])*)\\)\\s*'");
-            foreach (Match m in singleQuoteMatches)
-            {
-                var s = UnescapePdfString(m.Groups["s"].Value);
-                if (!string.IsNullOrWhiteSpace(s)) results.Add(s);
-                if (TotalLength(results) > 2_000_000) break;
-            }
-
-            var doubleQuoteMatches = Regex.Matches(combined, "\\((?<s>(?:\\\\.|[^\\\\\\)])*)\\)\\s*\"");
-            foreach (Match m in doubleQuoteMatches)
-            {
-                var s = UnescapePdfString(m.Groups["s"].Value);
-                if (!string.IsNullOrWhiteSpace(s)) results.Add(s);
-                if (TotalLength(results) > 2_000_000) break;
-            }
+            ProcessQuoteOperators(combined, results, ref currentLength);
         }
 
         if (results.Count == 0) return string.Empty;
 
         return NormalizeWhitespace(string.Join("\n", results));
     }
+
+    private static void ProcessTjOperators(string combined, List<string> results, ref int currentLength)
+    {
+        var matches = Regex.Matches(combined, "\\((?<s>(?:\\\\.|[^\\\\\\)])*)\\)\\s*T[jJ]");
+        foreach (Match match in matches)
+        {
+            var text = UnescapePdfString(match.Groups["s"].Value);
+            if (!TryAddResult(results, text, ref currentLength))
+            {
+                break;
+            }
+        }
+    }
+
+    private static void ProcessTjArrayOperators(string combined, List<string> results, ref int currentLength)
+    {
+        var arrayMatches = Regex.Matches(combined, "\\[(?<arr>[^\\]]*)\\]\\s*TJ");
+        foreach (Match match in arrayMatches)
+        {
+            var arr = match.Groups["arr"].Value;
+            var sb = new StringBuilder();
+            foreach (Match part in Regex.Matches(arr, "\\((?<s>(?:\\\\.|[^\\\\\\)])*)\\)"))
+            {
+                sb.Append(UnescapePdfString(part.Groups["s"].Value));
+                if (sb.Length > MaxArraySegmentCharacters) break;
+            }
+
+            var text = sb.ToString();
+            if (!TryAddResult(results, text, ref currentLength))
+            {
+                break;
+            }
+        }
+    }
+
+    private static void ProcessQuoteOperators(string combined, List<string> results, ref int currentLength)
+    {
+        ProcessQuotePattern(combined, results, ref currentLength, "\\((?<s>(?:\\\\.|[^\\\\\\)])*)\\)\\s*'");
+        if (HasExceededResultLimit(currentLength))
+        {
+            return;
+        }
+
+        ProcessQuotePattern(combined, results, ref currentLength, "\\((?<s>(?:\\\\.|[^\\\\\\)])*)\\)\\s*\"");
+    }
+
+    private static void ProcessQuotePattern(string combined, List<string> results, ref int currentLength, string pattern)
+    {
+        var matches = Regex.Matches(combined, pattern);
+        foreach (Match match in matches)
+        {
+            var text = UnescapePdfString(match.Groups["s"].Value);
+            if (!TryAddResult(results, text, ref currentLength))
+            {
+                break;
+            }
+        }
+    }
+
+    private static bool TryAddResult(List<string> results, string text, ref int currentLength)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return !HasExceededResultLimit(currentLength);
+        }
+
+        results.Add(text);
+        currentLength += text.Length;
+        return !HasExceededResultLimit(currentLength);
+    }
+
+    private static bool HasExceededResultLimit(int currentLength) => currentLength > MaxResultCharacters;
 
     private readonly struct PdfStreamChunk
     {
@@ -353,51 +423,99 @@ public class CvReadabilityService : ICvReadabilityService
 
     private static string UnescapePdfString(string s)
     {
-        // Handle common escapes: \\ \( \) and octal \ddd
+        // Escape sequences can span multiple characters, so we manually move the index.
         var sb = new StringBuilder();
-        for (int i = 0; i < s.Length; i++)
+        int index = 0;
+        while (index < s.Length)
         {
-            var c = s[i];
-            if (c == '\\' && i + 1 < s.Length)
+            if (s[index] != '\\' || index + 1 >= s.Length)
             {
-                var n = s[i + 1];
-                switch (n)
-                {
-                    case '\\': sb.Append('\\'); i++; break;
-                    case '(': sb.Append('('); i++; break;
-                    case ')': sb.Append(')'); i++; break;
-                    case 'n': sb.Append('\n'); i++; break;
-                    case 'r': sb.Append('\r'); i++; break;
-                    case 't': sb.Append('\t'); i++; break;
-                    default:
-                        // octal: up to 3 digits
-                        if (char.IsDigit(n))
-                        {
-                            int len = 1;
-                            while (i + 1 + len < s.Length && len < 3 && char.IsDigit(s[i + 1 + len])) len++;
-                            var oct = s.Substring(i + 1, len);
-                            try
-                            {
-                                var val = Convert.ToInt32(oct, 8);
-                                sb.Append((char)val);
-                                i += len;
-                            }
-                            catch { sb.Append(n); i++; }
-                        }
-                        else
-                        {
-                            sb.Append(n);
-                            i++;
-                        }
-                        break;
-                }
+                sb.Append(s[index]);
+                index++;
+                continue;
+            }
+
+            if (TryAppendEscapedCharacter(s, index, sb, out var consumed))
+            {
+                index += consumed;
             }
             else
             {
-                sb.Append(c);
+                sb.Append(s[index + 1]);
+                index += 2;
             }
         }
+
         return sb.ToString();
+    }
+
+    private static bool TryAppendEscapedCharacter(string source, int escapeStartIndex, StringBuilder target, out int consumed)
+    {
+        var nextChar = source[escapeStartIndex + 1];
+        switch (nextChar)
+        {
+            case '\\':
+            case '(':
+            case ')':
+                target.Append(nextChar);
+                consumed = 2;
+                return true;
+            case 'n':
+                target.Append('\n');
+                consumed = 2;
+                return true;
+            case 'r':
+                target.Append('\r');
+                consumed = 2;
+                return true;
+            case 't':
+                target.Append('\t');
+                consumed = 2;
+                return true;
+            default:
+                if (char.IsDigit(nextChar))
+                {
+                    int digits = 1;
+                    while (escapeStartIndex + 1 + digits < source.Length && digits < 3 && char.IsDigit(source[escapeStartIndex + 1 + digits]))
+                    {
+                        digits++;
+                    }
+
+                    var octalSegment = source.Substring(escapeStartIndex + 1, digits);
+                    if (TryParseOctalValue(octalSegment, out var value))
+                    {
+                        target.Append(value);
+                        consumed = 1 + digits;
+                        return true;
+                    }
+                }
+
+                consumed = 0;
+                return false;
+        }
+    }
+
+    private static bool TryParseOctalValue(string octalSegment, out char value)
+    {
+        value = default;
+        if (string.IsNullOrEmpty(octalSegment))
+        {
+            return false;
+        }
+
+        int total = 0;
+        foreach (var ch in octalSegment)
+        {
+            if (ch < '0' || ch > '7')
+            {
+                return false;
+            }
+
+            total = (total << 3) + (ch - '0');
+        }
+
+        value = (char)total;
+        return true;
     }
 
     private static bool TryFillBuffer(Stream stream, Span<byte> buffer)

@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Newtonsoft.Json;
 using SharedInfrastructure.Cities;
 
 
@@ -22,25 +21,6 @@ namespace FindjobnuService.Repositories.Context
         public DbSet<Skill> Skills { get; set; }
         public DbSet<JobKeyword> JobKeywords { get; set; }
         public DbSet<JobAgent> JobAgents { get; set; }
-
-        private static class ListStringConverterHelpers
-        {
-            public static string? ToCsv(List<string>? v) => v == null ? null : string.Join(",", v);
-            public static List<string> FromCsv(string? v) => string.IsNullOrWhiteSpace(v) ? new List<string>() : v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
-
-            public static string? ToJson(List<string>? v) => v == null ? null : JsonConvert.SerializeObject(v);
-            public static List<string> FromJsonWithCsvFallback(string? v)
-            {
-                if (string.IsNullOrWhiteSpace(v)) return new List<string>();
-                try
-                {
-                    var list = JsonConvert.DeserializeObject<List<string>>(v);
-                    if (list != null) return list;
-                }
-                catch { }
-                return FromCsv(v);
-            }
-        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
