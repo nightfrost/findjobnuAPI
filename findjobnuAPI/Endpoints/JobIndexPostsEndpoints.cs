@@ -83,7 +83,7 @@ public static class JobIndexPostsEndpoints
         group.MapGet("/categories", async Task<Results<Ok<CategoriesResponse>, NoContent>> ([FromServices] IJobIndexPostsService service) =>
         {
             var categories = await service.GetCategoriesAsync();
-            return categories.CategoryAndAmountOfJobs.Count > 0 ? TypedResults.Ok(categories) : TypedResults.NoContent();
+            return categories.Categories.Count > 0 ? TypedResults.Ok(categories) : TypedResults.NoContent();
         })
         .WithName("GetJobCategories");
 

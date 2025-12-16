@@ -1,9 +1,13 @@
-﻿namespace FindjobnuService.DTOs.Responses
+﻿using System.Collections.Generic;
+
+namespace FindjobnuService.DTOs.Responses
 {
-    public struct CategoriesResponse(bool success, string? errorMessage, Dictionary<string, int> categoryAndAmountOfJobs)
+    public readonly record struct CategoryJobCountResponse(int Id, string Name, int NumberOfJobs);
+
+    public struct CategoriesResponse(bool success, string? errorMessage, IReadOnlyList<CategoryJobCountResponse> categories)
     {
         public bool Success { get; set; } = success;
         public string? ErrorMessage { get; set; } = errorMessage;
-        public Dictionary<string, int> CategoryAndAmountOfJobs { get; set; } = categoryAndAmountOfJobs;
+        public IReadOnlyList<CategoryJobCountResponse> Categories { get; set; } = categories;
     }
 }

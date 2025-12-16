@@ -141,9 +141,9 @@ namespace FindjobnuTesting
 
             Assert.True(response.Success);
             Assert.Null(response.ErrorMessage);
-            Assert.Contains("IT", response.CategoryAndAmountOfJobs.Keys);
-            Assert.Contains("Design", response.CategoryAndAmountOfJobs.Keys);
-            Assert.Equal(2, response.CategoryAndAmountOfJobs.Count);
+            Assert.Contains(response.Categories, c => c.Name == "IT");
+            Assert.Contains(response.Categories, c => c.Name == "Design");
+            Assert.Equal(2, response.Categories.Count);
         }
 
         [Fact]
