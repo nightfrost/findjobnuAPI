@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using FindjobnuService.Models;
 using FindjobnuService.Repositories.Context;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +19,13 @@ namespace FindjobnuService.Services
         }
 
         // Adjust signature to match interface (non-nullable frequency)
-        public async Task<JobAgent> CreateOrUpdateAsync(int profileId, bool enabled, JobAgentFrequency frequency)
+        public async Task<JobAgent> CreateOrUpdateAsync(
+            int profileId,
+            bool enabled,
+            JobAgentFrequency frequency,
+            IEnumerable<string>? preferredLocations,
+            IEnumerable<int>? preferredCategoryIds,
+            IEnumerable<string>? includeKeywords)
         {
             var profile = await _db.Profiles.Include(p => p.JobAgent).FirstOrDefaultAsync(p => p.Id == profileId);
             if (profile == null) throw new InvalidOperationException("Profile not found");
@@ -32,7 +40,10 @@ namespace FindjobnuService.Services
                     Frequency = frequency,
                     CreatedAt = now,
                     NextSendAt = ComputeNext(now, frequency),
-                    UnsubscribeToken = GenerateToken()
+                    UnsubscribeToken = GenerateToken(),
+                    PreferredLocations = NormalizeStrings(preferredLocations),
+                    PreferredCategoryIds = NormalizeInts(preferredCategoryIds),
+                    IncludeKeywords = NormalizeStrings(includeKeywords)
                 };
                 _db.JobAgents.Add(profile.JobAgent);
             }
@@ -41,6 +52,9 @@ namespace FindjobnuService.Services
                 profile.JobAgent.Enabled = enabled;
                 profile.JobAgent.Frequency = frequency;
                 profile.JobAgent.UpdatedAt = now;
+                profile.JobAgent.PreferredLocations = NormalizeStrings(preferredLocations);
+                profile.JobAgent.PreferredCategoryIds = NormalizeInts(preferredCategoryIds);
+                profile.JobAgent.IncludeKeywords = NormalizeStrings(includeKeywords);
                 if (enabled && profile.JobAgent.NextSendAt == null)
                 {
                     profile.JobAgent.NextSendAt = ComputeNext(now, profile.JobAgent.Frequency);
@@ -101,6 +115,25 @@ namespace FindjobnuService.Services
                 .Replace("+", "-")
                 .Replace("/", "_")
                 .TrimEnd('=');
+        }
+
+        private static List<string> NormalizeStrings(IEnumerable<string>? values)
+        {
+            if (values == null) return new List<string>();
+            return values
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Select(v => v.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static List<int> NormalizeInts(IEnumerable<int>? values)
+        {
+            if (values == null) return new List<int>();
+            return values
+                .Where(v => v > 0)
+                .Distinct()
+                .ToList();
         }
     }
 }

@@ -5,7 +5,7 @@ namespace JobAgentWorkerService.Templates
 {
     public static class EmailTemplates
     {
-        public static string JobRecommendationsHtml(string firstName, string frequency, IEnumerable<JobIndexPosts> jobs, string unsubscribeLink)
+        public static string JobRecommendationsHtml(string firstName, string frequency, IEnumerable<JobIndexPosts> jobs, string unsubscribeLink, string? filtersSummary = null)
         {
             var sb = new StringBuilder();
             sb.Append("<!DOCTYPE html><html><head><meta charset='utf-8'><style>");
@@ -23,6 +23,12 @@ namespace JobAgentWorkerService.Templates
             sb.Append("<div class='header'><h2 style='margin:0'>Your ").Append(frequency).Append(" job recommendations</h2></div>");
             sb.Append("<div class='content'><p>Hi ").Append(System.Net.WebUtility.HtmlEncode(firstName)).Append(",</p>");
             sb.Append("<p>Here are some new roles you might like:</p>");
+            if (!string.IsNullOrWhiteSpace(filtersSummary))
+            {
+                sb.Append("<p style='font-size:13px;color:#666;margin:8px 0 16px'>Filters: ")
+                  .Append(System.Net.WebUtility.HtmlEncode(filtersSummary))
+                  .Append("</p>");
+            }
 
             foreach (var job in jobs)
             {
@@ -33,7 +39,7 @@ namespace JobAgentWorkerService.Templates
                 sb.Append("<div class='job'>");
                 sb.Append("<p class='title'>").Append(title).Append("</p>");
                 sb.Append("<p class='meta'>").Append(company);
-                if (!string.IsNullOrWhiteSpace(location)) sb.Append(" · ").Append(location);
+                if (!string.IsNullOrWhiteSpace(location)) sb.Append(" &middot; ").Append(location);
                 sb.Append("</p>");
                 if (!string.IsNullOrWhiteSpace(url))
                 {

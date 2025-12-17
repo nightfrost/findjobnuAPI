@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -38,5 +39,10 @@ namespace FindjobnuService.Models
         // Token used for anonymous unsubscribe endpoint
         [StringLength(128)]
         public string? UnsubscribeToken { get; set; }
+
+        // Optional filters applied after base recommendations are built
+        public List<string>? PreferredLocations { get; set; } = new();
+        public List<int>? PreferredCategoryIds { get; set; } = new();
+        public List<string>? IncludeKeywords { get; set; } = new();
     }
 }

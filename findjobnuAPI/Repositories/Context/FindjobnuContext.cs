@@ -1,4 +1,5 @@
-﻿using FindjobnuService.Models;
+﻿using System.Collections.Generic;
+using FindjobnuService.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -54,11 +55,35 @@ namespace FindjobnuService.Repositories.Context
                 c => c == null ? 0 : c.Aggregate(0, (a, v) => HashCode.Combine(a, v != null ? v.GetHashCode() : 0)),
                 c => c == null ? null : c.ToList()
             );
+            var intListConverter = new ValueConverter<List<int>?, string?>(
+                v => v == null ? null : string.Join(',', v),
+                v => ConvertDelimitedStringToIntList(v)
+            );
+            var intListComparer = new ValueComparer<List<int>?>(
+                (c1, c2) => (c1 == null && c2 == null) || (c1 != null && c2 != null && c1.SequenceEqual(c2)),
+                c => c == null ? 0 : c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                c => c == null ? null : c.ToList()
+            );
 
             modelBuilder.Entity<Profile>()
                 .Property(p => p.Keywords)
                 .HasConversion(keywordsConverter)
                 .Metadata.SetValueComparer(keywordsComparer);
+
+            modelBuilder.Entity<JobAgent>()
+                .Property(j => j.PreferredLocations)
+                .HasConversion(keywordsConverter)
+                .Metadata.SetValueComparer(keywordsComparer);
+
+            modelBuilder.Entity<JobAgent>()
+                .Property(j => j.IncludeKeywords)
+                .HasConversion(keywordsConverter)
+                .Metadata.SetValueComparer(keywordsComparer);
+
+            modelBuilder.Entity<JobAgent>()
+                .Property(j => j.PreferredCategoryIds)
+                .HasConversion(intListConverter)
+                .Metadata.SetValueComparer(intListComparer);
 
             // Many-to-many: JobIndexPosts <-> Category
             modelBuilder.Entity<JobIndexPosts>()
@@ -89,16 +114,6 @@ namespace FindjobnuService.Repositories.Context
                 .HasForeignKey(e => e.ProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<Profile>()
-                .HasMany(p => p.Educations)
-                .WithOne(e => e.Profile)
-                .HasForeignKey(e => e.ProfileId)
-                .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<Profile>()
-                .HasMany(p => p.Interests)
-                .WithOne(e => e.Profile)
-                .HasForeignKey(e => e.ProfileId)
-                .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<Profile>()
                 .HasMany(p => p.Accomplishments)
                 .WithOne(e => e.Profile)
                 .HasForeignKey(e => e.ProfileId)
@@ -120,6 +135,25 @@ namespace FindjobnuService.Repositories.Context
                 .WithOne(ja => ja.Profile)
                 .HasForeignKey<JobAgent>(ja => ja.ProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
+        }
+
+        private static List<int> ConvertDelimitedStringToIntList(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return new List<int>();
+            }
+
+            var results = new List<int>();
+            foreach (var segment in value.Split(',', StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (int.TryParse(segment.Trim(), out var parsed))
+                {
+                    results.Add(parsed);
+                }
+            }
+
+            return results;
         }
     }
 }

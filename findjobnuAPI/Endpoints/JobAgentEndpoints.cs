@@ -31,7 +31,13 @@ namespace FindjobnuService.Endpoints
                     return TypedResults.Forbid();
 
                 var frequency = request.Frequency ?? JobAgentFrequency.Weekly;
-                var agent = await service.CreateOrUpdateAsync(profileId, request.Enabled, frequency);
+                var agent = await service.CreateOrUpdateAsync(
+                    profileId,
+                    request.Enabled,
+                    frequency,
+                    request.PreferredLocations,
+                    request.PreferredCategoryIds,
+                    request.IncludeKeywords);
                 return TypedResults.Ok(agent);
             }).WithName("CreateOrUpdateJobAgent");
 

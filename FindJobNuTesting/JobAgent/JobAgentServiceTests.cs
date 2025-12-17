@@ -32,7 +32,7 @@ namespace FindjobnuTesting.JobAgentTests
             ctx.SaveChanges();
             var svc = CreateService(ctx);
 
-            var agent = await svc.CreateOrUpdateAsync(profile.Id, true, JobAgentFrequency.Weekly);
+            var agent = await svc.CreateOrUpdateAsync(profile.Id, true, JobAgentFrequency.Weekly, null, null, null);
             Assert.NotNull(agent);
             Assert.True(agent.Enabled);
             Assert.Equal(JobAgentFrequency.Weekly, agent.Frequency);
@@ -46,9 +46,9 @@ namespace FindjobnuTesting.JobAgentTests
             ctx.Profiles.Add(profile);
             ctx.SaveChanges();
             var svc = CreateService(ctx);
-            var first = await svc.CreateOrUpdateAsync(profile.Id, false, JobAgentFrequency.Weekly);
+            var first = await svc.CreateOrUpdateAsync(profile.Id, false, JobAgentFrequency.Weekly, null, null, null);
 
-            var updated = await svc.CreateOrUpdateAsync(profile.Id, true, JobAgentFrequency.Daily);
+            var updated = await svc.CreateOrUpdateAsync(profile.Id, true, JobAgentFrequency.Daily, null, null, null);
             Assert.True(updated.Enabled);
             Assert.Equal(JobAgentFrequency.Daily, updated.Frequency);
             Assert.Equal(first.Id, updated.Id);
@@ -62,7 +62,7 @@ namespace FindjobnuTesting.JobAgentTests
             ctx.Profiles.Add(profile);
             ctx.SaveChanges();
             var svc = CreateService(ctx);
-            await svc.CreateOrUpdateAsync(profile.Id, true, JobAgentFrequency.Weekly);
+            await svc.CreateOrUpdateAsync(profile.Id, true, JobAgentFrequency.Weekly, null, null, null);
 
             var token = await svc.GetOrCreateUnsubscribeTokenAsync(profile.Id);
             Assert.False(string.IsNullOrWhiteSpace(token));
@@ -76,7 +76,7 @@ namespace FindjobnuTesting.JobAgentTests
             ctx.Profiles.Add(profile);
             ctx.SaveChanges();
             var svc = CreateService(ctx);
-            var agent = await svc.CreateOrUpdateAsync(profile.Id, true, JobAgentFrequency.Weekly);
+            var agent = await svc.CreateOrUpdateAsync(profile.Id, true, JobAgentFrequency.Weekly, null, null, null);
             var token = await svc.GetOrCreateUnsubscribeTokenAsync(profile.Id);
             Assert.NotNull(token);
 
