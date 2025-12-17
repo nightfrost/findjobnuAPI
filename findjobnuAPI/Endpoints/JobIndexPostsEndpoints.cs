@@ -48,7 +48,7 @@ public static class JobIndexPostsEndpoints
                 var pagedList = await service.SearchAsync(
                     request.SearchTerm,
                     request.Location,
-                    request.Category,
+                    request.CategoryId,
                     request.PostedAfter,
                     request.PostedBefore,
                     request.Page,

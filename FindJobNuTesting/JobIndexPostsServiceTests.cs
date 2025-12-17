@@ -68,8 +68,9 @@ namespace FindjobnuTesting
             var context = GetDbContextWithData();
             var logger = new Mock<ILogger<JobIndexPostsService>>().Object;
             var service = new JobIndexPostsService(context, logger);
+            var itCategoryId = context.Categories.First(c => c.Name == "IT").CategoryID;
 
-            var result = await service.SearchAsync(null, "NY", "IT", null, null, 1, 20);
+            var result = await service.SearchAsync(null, "NY", itCategoryId, null, null, 1, 20);
 
             Assert.NotNull(result);
             Assert.Single(result.Items);
@@ -270,5 +271,30 @@ namespace FindjobnuTesting
         //    Assert.NotNull(result);
         //    Assert.Contains(result.Items, j => j.JobID == 201);
         //}
+
+        [Fact]
+        public async Task SearchAsync_LocationTokenMatchesMultipleDistricts()
+        {
+            var options = new DbContextOptionsBuilder<FindjobnuContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            using var context = new FindjobnuContext(options);
+            var category = new Category { Name = "IT" };
+            context.Categories.Add(category);
+            context.JobIndexPosts.AddRange(
+                new JobIndexPosts { JobID = 100, JobTitle = "Backend Dev", JobLocation = "København K", Categories = new List<Category> { category }, Published = DateTime.UtcNow },
+                new JobIndexPosts { JobID = 200, JobTitle = "Frontend Dev", JobLocation = "København V", Categories = new List<Category> { category }, Published = DateTime.UtcNow }
+            );
+            context.SaveChanges();
+
+            var logger = new Mock<ILogger<JobIndexPostsService>>().Object;
+            var service = new JobIndexPostsService(context, logger);
+
+            var result = await service.SearchAsync(null, "København K", category.CategoryID, null, null, 1, 20);
+
+            Assert.Equal(2, result.TotalCount);
+            Assert.Contains(result.Items, j => j.JobLocation == "København V");
+            Assert.Contains(result.Items, j => j.JobLocation == "København K");
+        }
     }
 }
