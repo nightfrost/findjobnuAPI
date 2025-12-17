@@ -152,10 +152,10 @@ WHERE (@postedAfter IS NULL OR j.Published >= @postedAfter)
                 if (postedAfter.HasValue) q = q.Where(j => j.Published >= postedAfter.Value);
                 if (postedBefore.HasValue) q = q.Where(j => j.Published <= postedBefore.Value);
 
-                if (!string.IsNullOrWhiteSpace(normalizedLocation))
+                if (!string.IsNullOrWhiteSpace(primaryLocationToken))
                 {
-                    var locTokens = locationTokens?.Select(t => t.ToLowerInvariant()).ToList();
-                    q = q.Where(j => j.JobLocation != null && locTokens != null && locTokens.Any(token => j.JobLocation.ToLower().Contains(token)));
+                    var locationToken = primaryLocationToken;
+                    q = q.Where(j => j.JobLocation != null && j.JobLocation.Contains(locationToken));
                 }
                 if (categoryId.HasValue)
                 {
