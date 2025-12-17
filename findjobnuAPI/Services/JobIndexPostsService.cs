@@ -210,10 +210,20 @@ JOIN dbo.JobIndexPostingsExtended j ON j.JobID = k.JobID";
         {
             try
             {
-                var categoryJobCounts = await _db.Categories
-                    .Select(c => new CategoryJobCountResponse(c.CategoryID, c.Name, c.JobIndexPosts.Count))
+                var rawCategoryData = await _db.Categories
+                    .AsNoTracking()
+                    .Select(c => new
+                    {
+                        c.CategoryID,
+                        c.Name,
+                        NumberOfJobs = c.JobIndexPosts.Count
+                    })
                     .OrderBy(x => x.Name)
                     .ToListAsync();
+
+                var categoryJobCounts = rawCategoryData
+                    .Select(x => new CategoryJobCountResponse(x.CategoryID, x.Name, x.NumberOfJobs))
+                    .ToList();
 
                 return new CategoriesResponse(true, null, categoryJobCounts);
             }
