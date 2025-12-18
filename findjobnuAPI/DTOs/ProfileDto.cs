@@ -87,14 +87,4 @@ namespace FindjobnuService.DTOs
         public int Proficiency { get; set; }
     }
 
-    public class JobAgentDto
-    {
-        public int Id { get; set; }
-        public bool Enabled { get; set; }
-        public string Frequency { get; set; } = "Weekly";
-        public DateTime? LastSentAt { get; set; }
-        public DateTime? NextSendAt { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
-    }
 }

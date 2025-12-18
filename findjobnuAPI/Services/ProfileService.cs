@@ -1,4 +1,5 @@
 using FindjobnuService.DTOs;
+using FindjobnuService.Mappers;
 using FindjobnuService.Models;
 using FindjobnuService.Repositories.Context;
 using Microsoft.EntityFrameworkCore;
@@ -34,16 +35,7 @@ namespace FindjobnuService.Services
                 SavedJobPosts = profile.SavedJobPosts,
                 Keywords = profile.Keywords,
                 HasJobAgent = profile.HasJobAgent,
-                JobAgent = profile.JobAgent == null ? null : new JobAgentDto
-                {
-                    Id = profile.JobAgent.Id,
-                    Enabled = profile.JobAgent.Enabled,
-                    Frequency = profile.JobAgent.Frequency.ToString(),
-                    LastSentAt = profile.JobAgent.LastSentAt,
-                    NextSendAt = profile.JobAgent.NextSendAt,
-                    CreatedAt = profile.JobAgent.CreatedAt,
-                    UpdatedAt = profile.JobAgent.UpdatedAt
-                },
+                JobAgent = JobAgentMapper.ToDto(profile.JobAgent),
                 BasicInfo = new BasicInfoDto
                 {
                     FirstName = profile.BasicInfo.FirstName,

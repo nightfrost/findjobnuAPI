@@ -1,5 +1,7 @@
+using FindjobnuService.DTOs;
 using FindjobnuService.DTOs.Requests;
 using FindjobnuService.Models;
+using FindjobnuService.Mappers;
 using FindjobnuService.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -13,17 +15,18 @@ namespace FindjobnuService.Endpoints
         {
             var group = routes.MapGroup("/api/jobagent").WithTags("JobAgent").RequireAuthorization();
 
-            group.MapGet("/{profileId}", async Task<Results<Ok<JobAgent>, ForbidHttpResult, NotFound>> (int profileId, HttpContext ctx, IJobAgentService service, IProfileService profiles) =>
+            group.MapGet("/{profileId}", async Task<Results<Ok<JobAgentDto>, ForbidHttpResult, NotFound>> (int profileId, HttpContext ctx, IJobAgentService service, IProfileService profiles) =>
             {
                 var authedUserId = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var profile = await profiles.GetByUserIdAsync(authedUserId!);
                 if (profile == null || profile.Id != profileId)
                     return TypedResults.Forbid();
                 var agent = await service.GetByProfileIdAsync(profileId);
-                return agent != null ? TypedResults.Ok(agent) : TypedResults.NotFound();
+                var dto = JobAgentMapper.ToDto(agent);
+                return dto != null ? TypedResults.Ok(dto) : TypedResults.NotFound();
             }).WithName("GetJobAgent");
 
-            group.MapPost("/{profileId}", async Task<Results<Ok<JobAgent>, ForbidHttpResult, BadRequest<string>>> (int profileId, JobAgentUpdateRequest request, HttpContext ctx, IJobAgentService service, IProfileService profiles) =>
+            group.MapPost("/{profileId}", async Task<Results<Ok<JobAgentDto>, ForbidHttpResult, BadRequest<string>>> (int profileId, JobAgentUpdateRequest request, HttpContext ctx, IJobAgentService service, IProfileService profiles) =>
             {
                 var authedUserId = ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var profile = await profiles.GetByUserIdAsync(authedUserId!);
@@ -38,7 +41,8 @@ namespace FindjobnuService.Endpoints
                     request.PreferredLocations,
                     request.PreferredCategoryIds,
                     request.IncludeKeywords);
-                return TypedResults.Ok(agent);
+                var dto = JobAgentMapper.ToDto(agent);
+                return TypedResults.Ok(dto!);
             }).WithName("CreateOrUpdateJobAgent");
 
             // Get unsubscribe link (for UI to display or test)
